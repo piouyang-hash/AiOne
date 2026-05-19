@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 命名空间必须和Mapper接口全类名一致 -->
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.key_word_db.AiChatKeywordMapper">
+
+    <!-- ResultMap：数据库下划线字段 → Java驼峰字段映射 -->
+    <resultMap id="AiChatKeywordResultMap" type="org.myfx.controls.aione.AiService.entity.key_word_db.AiChatKeyword">
+        <id column="keyword_id" property="keywordId" jdbcType="BIGINT"/>
+        <result column="session_id" property="sessionId" jdbcType="BIGINT"/>
+        <result column="msg_id" property="msgId" jdbcType="BIGINT"/>
+        <result column="parent_msg_id" property="parentMsgId" jdbcType="BIGINT"/>
+        <result column="user_id" property="userId" jdbcType="BIGINT"/>
+        <result column="keyword_content" property="keywordContent" jdbcType="VARCHAR"/>
+        <result column="keyword_sort" property="keywordSort" jdbcType="TINYINT"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 新增单条关键词（create_time由数据库默认生成，不传入） -->
+    <insert id="insertKeyword" parameterType="org.myfx.controls.aione.AiService.entity.key_word_db.AiChatKeyword">
+        INSERT INTO ai_chat_keyword (
+            keyword_id,
+            session_id,
+            msg_id,
+            parent_msg_id,
+            user_id,
+            keyword_content,
+            keyword_sort
+        ) VALUES (
+                     #{keywordId,jdbcType=BIGINT},
+                     #{sessionId,jdbcType=BIGINT},
+                     #{msgId,jdbcType=BIGINT},
+                     #{parentMsgId,jdbcType=BIGINT},
+                     #{userId,jdbcType=BIGINT},
+                     #{keywordContent,jdbcType=VARCHAR},
+                     #{keywordSort,jdbcType=TINYINT}
+                 )
+    </insert>
+
+    <!-- 批量插入SQL：核心是foreach遍历列表 -->
+    <insert id="batchInsertKeywords">
+        INSERT INTO ai_chat_keyword (
+        keyword_id,   -- 雪花ID（你自己生成传入）
+        session_id,
+        msg_id,
+        parent_msg_id,
+        user_id,
+        keyword_content,
+        keyword_sort  -- 关键词排序（0/1/2...）
+        -- create_time 不写！数据库自动生成
+        ) VALUES
+        <!-- foreach遍历列表：
+             collection：对应接口@Param的参数名（keywordList）
+             item：遍历的每一个元素别名（item）
+             separator：每个元素之间的分隔符（逗号）
+        -->
+        <foreach collection="keywordList" item="item" separator=",">
+            (
+            #{item.keywordId},    -- 雪花ID（你生成的）
+            #{item.sessionId},
+            #{item.msgId},
+            #{item.parentMsgId},
+            #{item.userId},
+            #{item.keywordContent},
+            #{item.keywordSort}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据用户ID和会话ID查询所有关键词 -->
+    <select id="selectByUserIdAndSessionId" resultMap="AiChatKeywordResultMap">
+        SELECT keyword_id,
+               session_id,
+               msg_id,
+               parent_msg_id,
+               user_id,
+               keyword_content,
+               keyword_sort,
+               create_time
+        FROM ai_chat_keyword
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+          AND session_id = #{sessionId,jdbcType=BIGINT}
+        ORDER BY keyword_sort
+    </select>
+
+    <!-- 根据用户ID和会话ID删除对话中所有关键词 -->
+    <delete id="deleteByUserIdAndSessionId">
+        DELETE FROM ai_chat_keyword
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+          AND session_id = #{sessionId,jdbcType=BIGINT}
+    </delete>
+
+    <!-- 根据用户ID删除该用户所有关键词 -->
+    <delete id="deleteByUserId">
+        DELETE FROM ai_chat_keyword
+        WHERE user_id = #{userId,jdbcType=BIGINT}
+    </delete>
+
+</mapper>

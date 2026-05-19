@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.myfx.controls.aione.ServiceCommon.mapper.FileExceptionHandlerMapper">
+
+    <!-- 基础结果映射 -->
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.ServiceCommon.entity.FileExceptionHandler">
+        <id column="id" property="id"/>
+        <result column="log_id" property="logId"/>
+        <result column="business_id" property="businessId"/>
+        <result column="business_type" property="businessType"/>
+        <result column="file_path" property="filePath"/>
+        <result column="operation_type" property="operationType"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="max_retry" property="maxRetry"/>
+        <result column="final_fail_reason" property="finalFailReason"/>
+        <result column="handle_status" property="handleStatus"/>
+        <result column="handle_remark" property="handleRemark"/>
+    </resultMap>
+
+    <!-- 1. 查询所有记录 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+        id, log_id, business_id, business_type, file_path,
+        operation_type, retry_count, max_retry, final_fail_reason,
+        handle_status, handle_remark
+        FROM file_exception_handler
+    </select>
+
+    <!-- 2. 分页查询 -->
+    <select id="selectByPage" resultMap="BaseResultMap">
+        SELECT
+        id, log_id, business_id, business_type, file_path,
+        operation_type, retry_count, max_retry, final_fail_reason,
+        handle_status, handle_remark
+        FROM file_exception_handler
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 3. 新增异常记录（时间数据库自动生成，不写入） -->
+    <insert id="insertExceptionHandler" parameterType="org.myfx.controls.aione.ServiceCommon.entity.FileExceptionHandler">
+        INSERT INTO file_exception_handler (
+        id, log_id, business_id, business_type, file_path,
+        operation_type, retry_count, max_retry, final_fail_reason,
+        handle_status, handle_remark
+        ) VALUES (
+        #{id}, #{logId}, #{businessId}, #{businessType}, #{filePath},
+        #{operationType}, #{retryCount}, #{maxRetry}, #{finalFailReason},
+        #{handleStatus}, #{handleRemark}
+        )
+    </insert>
+
+    <!-- 4. 根据ID删除 -->
+    <delete id="deleteById">
+        DELETE FROM file_exception_handler WHERE id = #{id}
+    </delete>
+
+</mapper>

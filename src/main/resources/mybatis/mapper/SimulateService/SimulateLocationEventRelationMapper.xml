@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.SimulationGame.mapper.SimulateLocationEventRelationMapper">
+
+    <!-- 定义ResultMap：新增eventDuration字段映射 -->
+    <resultMap id="SimulateLocationEventRelationResultMap" type="org.myfx.controls.aione.SimulationGame.entity.SimulateLocationEventRelation">
+        <id column="relation_id" property="relationId"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="event_code" property="eventCode"/>
+        <result column="event_duration" property="eventDuration"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 新增关联关系：新增event_duration字段插入 -->
+    <insert id="insert" parameterType="map">
+        INSERT INTO simulate_location_event_relation (location_code, event_code, event_duration)
+        VALUES (#{locationCode}, #{eventCode}, #{eventDuration})
+    </insert>
+
+    <!-- 根据地点编码查询 -->
+    <select id="selectByLocationCode" parameterType="java.lang.String" resultMap="SimulateLocationEventRelationResultMap">
+        SELECT * FROM simulate_location_event_relation
+        WHERE location_code = #{locationCode}
+    </select>
+
+    <!-- 根据事件编码查询 -->
+    <select id="selectByEventCode" parameterType="java.lang.String" resultMap="SimulateLocationEventRelationResultMap">
+        SELECT * FROM simulate_location_event_relation
+        WHERE event_code = #{eventCode}
+    </select>
+
+    <!-- 根据两个编码精准查询 -->
+    <select id="selectByTwoCode" parameterType="map" resultMap="SimulateLocationEventRelationResultMap">
+        SELECT * FROM simulate_location_event_relation
+        WHERE location_code = #{locationCode}
+          AND event_code = #{eventCode}
+    </select>
+
+    <!-- 查询所有关联关系 -->
+    <select id="selectAll" resultMap="SimulateLocationEventRelationResultMap">
+        SELECT * FROM simulate_location_event_relation
+    </select>
+
+    <!-- 根据两个编码精准删除 -->
+    <delete id="deleteByTwoCode" parameterType="map">
+        DELETE FROM simulate_location_event_relation
+        WHERE location_code = #{locationCode}
+          AND event_code = #{eventCode}
+    </delete>
+
+</mapper>

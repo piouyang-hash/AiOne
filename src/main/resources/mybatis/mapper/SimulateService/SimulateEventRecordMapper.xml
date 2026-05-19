@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.SimulationGame.mapper.SimulateEventRecordMapper">
+
+    <!-- 保留原ResultMap：字段映射仍需要，即使SELECT用* -->
+    <resultMap id="SimulateEventRecordResultMap" type="org.myfx.controls.aione.SimulationGame.entity.SimulateEventRecord">
+        <id column="record_id" property="recordId"/>
+        <result column="sequence_id" property="sequenceId"/>
+        <result column="event_code" property="eventCode"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="actual_start" property="actualStart"/>
+        <result column="actual_end" property="actualEnd"/>
+        <!-- ========== 新增：默认执行时间字段映射 ========== -->
+        <result column="default_duration" property="defaultDuration"/>
+        <result column="exec_status" property="execStatus"/>
+        <!-- ========== 原有：version/seq_num字段映射 ========== -->
+        <result column="version" property="version"/>
+        <result column="seq_num" property="seqNum"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 新增事件记录：补充default_duration/version/seq_num字段插入 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.SimulationGame.entity.SimulateEventRecord">
+        INSERT INTO simulate_event_record (
+        record_id,
+        sequence_id,
+        event_code,
+        location_code,
+        actual_start,
+        actual_end,
+        <!-- ========== 新增：默认执行时间字段 ========== -->
+        default_duration,
+        exec_status,
+        <!-- ========== 原有：version/seq_num字段 ========== -->
+        version,
+        seq_num
+        ) VALUES (
+        #{recordId},
+        #{sequenceId},
+        #{eventCode},
+        #{locationCode},
+        #{actualStart},
+        #{actualEnd},
+        <!-- ========== 新增：默认执行时间字段值 ========== -->
+        #{defaultDuration},
+        #{execStatus},
+        <!-- ========== 原有：对应实体字段值 ========== -->
+        #{version},
+        #{seqNum}
+        )
+    </insert>
+
+    <!-- 替换原有selectRecordByTwoCode，改为三参数查询 -->
+    <select id="selectRecordByThreeCode"
+            parameterType="map"
+            resultType="org.myfx.controls.aione.SimulationGame.entity.SimulateEventRecord">
+        SELECT
+        *
+        FROM simulate_event_record
+        WHERE location_code = #{locationCode}
+        AND event_code = #{eventCode}
+        AND actual_start = #{actualStart}
+    </select>
+
+    <!-- 新增：查询指定执行状态的所有记录（无其他条件限制） -->
+    <select id="selectByExecStatus"
+            parameterType="org.myfx.controls.aione.SimulationGame.common.EventExecStatusEnum"
+            resultType="org.myfx.controls.aione.SimulationGame.entity.SimulateEventRecord">
+        SELECT
+        *
+        FROM simulate_event_record
+        WHERE exec_status = #{execStatus} <!-- MP自动处理枚举，直接匹配数据库存储值 -->
+    </select>
+
+    <!-- 动态更新事件记录：仅更新非空的结束时间/执行状态，仅允许更新执行中或中断状态的记录 -->
+    <update id="updateEventRecordByThreeCode" parameterType="map">
+        UPDATE simulate_event_record
+        SET
+        <!-- 动态更新：结束时间有值则更新 -->
+        <if test="actualEnd != null">
+            actual_end = #{actualEnd},
+        </if>
+        <!-- 动态更新：执行状态有值则更新 -->
+        <if test="execStatus != null">
+            exec_status = #{execStatus},
+        </if>
+        <!-- 强制刷新更新时间，无需手动传值 -->
+        update_time = CURRENT_TIMESTAMP
+        WHERE
+        <!-- 三参数精准定位记录：调整顺序为 location_code 在前，event_code 在后 -->
+        location_code = #{locationCode}
+        AND event_code = #{eventCode}
+        AND actual_start = #{actualStart}
+        <!-- 核心限制：仅允许更新执行中或中断状态的记录 -->
+        AND exec_status IN ('EXECUTING', 'INTERRUPTED')
+    </update>
+
+    <!-- 简化：用*替代显式字段 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="SimulateEventRecordResultMap">
+        SELECT *
+        FROM simulate_event_record
+        WHERE record_id = #{recordId}
+    </select>
+
+    <!-- 简化：用*替代显式字段 -->
+    <select id="selectByTimeRange" parameterType="map" resultMap="SimulateEventRecordResultMap">
+        SELECT *
+        FROM simulate_event_record
+        WHERE actual_start BETWEEN #{startTime} AND #{endTime}
+        ORDER BY actual_start DESC
+    </select>
+
+    <!-- 简化：用*替代显式字段 -->
+    <select id="selectByTwoCode" parameterType="map" resultMap="SimulateEventRecordResultMap">
+        SELECT *
+        FROM simulate_event_record
+        WHERE location_code = #{locationCode}
+          AND event_code = #{eventCode}
+        ORDER BY actual_start DESC
+    </select>
+
+    <!-- 新增：查询所有记录（无参数，用*，按创建时间倒序） -->
+    <select id="selectAll" resultMap="SimulateEventRecordResultMap">
+        SELECT *
+        FROM simulate_event_record
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据ID删除：无修改 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM simulate_event_record
+        WHERE record_id = #{recordId}
+    </delete>
+
+</mapper>

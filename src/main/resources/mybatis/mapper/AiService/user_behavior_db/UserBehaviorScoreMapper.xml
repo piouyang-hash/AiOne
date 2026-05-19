@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.user_behavior_db.UserBehaviorScoreMapper">
+
+    <!-- 基础ResultMap：分值配置实体映射 -->
+    <resultMap id="UserBehaviorScoreResultMap" type="org.myfx.controls.aione.AiService.entity.user_behavior_db.UserBehaviorScore">
+        <id column="id" property="id"/>
+        <result column="behavior_code" property="behaviorCode"/>
+        <result column="score_type" property="scoreType"/>
+        <result column="score_val" property="scoreVal"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 1. 新增分值配置 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.user_behavior_db.UserBehaviorScore" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_behavior_score (behavior_code, score_type, score_val)
+        VALUES (#{behaviorCode}, #{scoreType}, #{scoreVal})
+    </insert>
+
+    <!-- 2. 根据ID查询 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="UserBehaviorScoreResultMap">
+        SELECT id, behavior_code, score_type, score_val, create_time, update_time
+        FROM user_behavior_score
+        WHERE id = #{id}
+    </select>
+
+    <!-- 3. 根据【行为编码+分值类型】唯一查询（核心业务方法） -->
+    <select id="selectByCodeAndType" resultMap="UserBehaviorScoreResultMap">
+        SELECT id, behavior_code, score_type, score_val, create_time, update_time
+        FROM user_behavior_score
+        WHERE behavior_code = #{behaviorCode}
+          AND score_type = #{scoreType}
+    </select>
+
+    <!-- 4. 根据行为编码查询所有分值配置 -->
+    <select id="selectListByCode" resultMap="UserBehaviorScoreResultMap">
+        SELECT id, behavior_code, score_type, score_val, create_time, update_time
+        FROM user_behavior_score
+        WHERE behavior_code = #{behaviorCode}
+    </select>
+
+    <!-- 5. 根据ID动态更新分值 -->
+    <update id="updateById" parameterType="org.myfx.controls.aione.AiService.entity.user_behavior_db.UserBehaviorScore">
+        UPDATE user_behavior_score
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="behaviorCode != null">behavior_code = #{behaviorCode},</if>
+            <if test="scoreType != null">score_type = #{scoreType},</if>
+            <if test="scoreVal != null">score_val = #{scoreVal},</if>
+            update_time = NOW()
+        </trim>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 6. 根据【行为编码+分值类型】更新分值（核心业务方法） -->
+    <update id="updateScoreByCodeAndType">
+        UPDATE user_behavior_score
+        SET score_val = #{scoreVal},
+            update_time = NOW()
+        WHERE behavior_code = #{behaviorCode}
+          AND score_type = #{scoreType}
+    </update>
+
+    <!-- 7. 根据ID删除 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM user_behavior_score
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 8. 根据【行为编码+分值类型】删除 -->
+    <delete id="deleteByCodeAndType">
+        DELETE FROM user_behavior_score
+        WHERE behavior_code = #{behaviorCode}
+          AND score_type = #{scoreType}
+    </delete>
+
+</mapper>

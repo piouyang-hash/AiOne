@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.UserAiRoleBindMapper">
+
+    <!-- 通用结果集映射 -->
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.UserAiRoleBind">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="role_id" property="roleId"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 新增绑定关系（主键ID由业务层生成） -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.UserAiRoleBind">
+        INSERT INTO user_ai_role_bind (id, user_id, role_id)
+        VALUES (#{id}, #{userId}, #{roleId})
+    </insert>
+
+    <!-- 根据用户ID查询所有绑定的角色ID -->
+    <select id="selectRoleIdsByUserId" parameterType="java.lang.Integer" resultType="java.lang.Integer">
+        SELECT role_id FROM user_ai_role_bind WHERE user_id = #{userId}
+    </select>
+
+    <!-- 根据用户ID查询完整绑定列表 -->
+    <select id="selectListByUserId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT * FROM user_ai_role_bind WHERE user_id = #{userId}
+    </select>
+
+    <!-- 根据用户ID和角色ID 解除AI角色绑定（删除关联关系） -->
+    <delete id="deleteByUserIdAndRoleId">
+        DELETE FROM user_ai_role_bind
+        WHERE user_id = #{userId}
+          AND role_id = #{roleId}
+    </delete>
+
+</mapper>

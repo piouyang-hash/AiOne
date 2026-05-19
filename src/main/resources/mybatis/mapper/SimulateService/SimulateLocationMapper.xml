@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 对应Mapper接口全类名 -->
+<mapper namespace="org.myfx.controls.aione.SimulationGame.mapper.SimulateLocationMapper">
+
+    <!-- 定义ResultMap：数据库下划线字段对应实体驼峰字段 -->
+    <resultMap id="SimulateLocationResultMap" type="org.myfx.controls.aione.SimulationGame.entity.SimulateLocation">
+        <id column="location_id" property="locationId"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="location_desc" property="locationDesc"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 新增地点 -->
+    <insert id="insert" parameterType="map">
+        INSERT INTO simulate_location (location_code, location_desc)
+        VALUES (#{locationCode}, #{locationDesc})
+    </insert>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="SimulateLocationResultMap">
+        SELECT * FROM simulate_location
+        WHERE location_id = #{locationId}
+    </select>
+
+    <!-- 查询所有地点（无参数） -->
+    <select id="selectAll" resultMap="SimulateLocationResultMap">
+        SELECT *
+        FROM simulate_location
+        ORDER BY location_id
+    </select>
+
+    <!-- 根据编码精准查询 -->
+    <select id="selectByCode" parameterType="java.lang.String" resultMap="SimulateLocationResultMap">
+        SELECT * FROM simulate_location
+        WHERE location_code = #{locationCode}
+    </select>
+
+    <!-- 根据编码精准删除 -->
+    <delete id="deleteByCode" parameterType="java.lang.String">
+        DELETE FROM simulate_location
+        WHERE location_code = #{locationCode}
+    </delete>
+
+</mapper>

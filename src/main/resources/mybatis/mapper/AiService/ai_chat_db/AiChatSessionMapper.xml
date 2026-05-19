@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.AiChatSessionMapper">
+
+    <!-- 基础ResultMap：映射表字段和实体属性（移除冗余jdbcType配置） -->
+    <resultMap id="AiChatSessionResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiChatSession">
+        <id column="session_id" property="sessionId"/>
+        <result column="session_uuid" property="sessionUuid"/>
+        <result column="user_id" property="userId"/>
+        <result column="chat_title" property="chatTitle"/>
+        <result column="chat_avatar_path" property="chatAvatarPath"/>
+        <result column="last_message_content" property="lastMessageContent"/>
+        <result column="last_chat_timestamp" property="lastChatTimestamp"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="status" property="status"/>
+        <result column="is_system_session" property="isSystemSession"/>
+        <result column="is_recycle" property="isRecycle"/>
+        <result column="is_top" property="isTop"/>
+        <result column="top_at" property="topAt"/>
+        <result column="normal_unread_count" property="normalUnreadCount"/>
+        <result column="split_unread_count" property="splitUnreadCount"/>
+        <result column="role_id" property="roleId"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <!-- 查询指定用户的单个系统级别有效会话 -->
+    <select id="selectSystemSessionByUser" resultMap="AiChatSessionResultMap">
+        select *
+        from ai_chat_session
+        where user_id = #{userId}        <!-- 传入用户ID参数 -->
+        and is_system_session = 1     <!-- 核心：系统级别会话 -->
+        and status = 1
+        and is_recycle = 0
+        and is_deleted = 0
+        limit 1
+    </select>
+
+    <!-- 查询status=1的会话（limit 1）-->
+    <select id="selectActiveSessionByUserAndSession" resultMap="AiChatSessionResultMap">
+        select *
+        from ai_chat_session
+        where user_id = #{userId}
+        and session_id = #{sessionId}
+        and status = 1
+        and is_recycle = 0
+        and is_deleted = 0  <!-- 新增：排除系统逻辑删除的记录 -->
+        limit 1
+    </select>
+
+    <!-- 检查用户是否有任意活跃会话（返回count） -->
+    <select id="checkUserHasActiveSession" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM ai_chat_session
+        WHERE user_id = #{userId}
+        AND status = 1
+        AND is_recycle = 0
+        AND is_deleted = 0  <!-- 新增：排除系统逻辑删除的记录 -->
+        LIMIT 1 <!-- 只查1条，提升性能 -->
+    </select>
+
+    <!-- 检查指定用户+会话是否为活跃状态（返回count） -->
+    <select id="checkSessionIsActive" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM ai_chat_session
+        WHERE user_id = #{userId}
+        AND session_id = #{sessionId}
+        AND status = 1
+        AND is_recycle = 0
+        AND is_deleted = 0  <!-- 新增：排除系统逻辑删除的记录 -->
+        LIMIT 1
+    </select>
+
+    <!-- 查询用户未回收且lastMessageContent为空的会话 -->
+<!--    <select id="selectListByUserIdAndIsRecycleAndLastMsgNull" resultMap="AiChatSessionResultMap">-->
+<!--        SELECT * FROM ai_chat_session-->
+<!--        WHERE user_id = #{userId}-->
+<!--          AND is_recycle = #{isRecycle.code}-->
+<!--          AND (last_message_content IS NULL OR last_message_content = '')-->
+<!--    </select>-->
+
+    <!-- 根据用户ID查询当前激活的会话（仅返回1条，适配“用户仅一个激活会话”的业务规则） -->
+    <select id="selectActiveSessionByUserId" resultMap="AiChatSessionResultMap">
+        select *
+        from ai_chat_session
+        where user_id = #{userId}
+        and status = 1          <!-- 激活状态 -->
+        and is_recycle = 0      <!-- 未回收 -->
+        and is_deleted = 0      <!-- 新增：排除系统逻辑删除的记录 -->
+        LIMIT 1                   <!-- 强制限制1条，符合业务规则且提升性能 -->
+    </select>
+
+    <!-- 批量查询多个用户的当前激活会话（每个用户最多1条） -->
+    <select id="selectActiveSessionByUserIds" resultMap="AiChatSessionResultMap">
+        select *
+        from ai_chat_session
+        where user_id in
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+        and status = 1          <!-- 激活状态 -->
+        and is_recycle = 0      <!-- 未回收 -->
+        and is_deleted = 0      <!-- 逻辑未删除 -->
+    </select>
+
+    <!-- 按用户ID批量修改会话状态为0（关闭）（仅未回收的会话） -->
+    <update id="updateStatusToClosedByUserId">
+        UPDATE ai_chat_session
+        SET status = 0
+        WHERE user_id = #{userId}
+        AND is_recycle = 0 <!-- 仅修改未回收的会话，避免操作已回收数据 -->
+        AND is_deleted = 0 <!-- 新增：不操作系统逻辑删除的记录 -->
+    </update>
+
+    <!-- 按用户ID+会话ID精准修改会话状态为1（活跃）（仅未回收的会话） -->
+    <update id="updateStatusToActiveByUserAndSession">
+        UPDATE ai_chat_session
+        SET status = 1
+        WHERE user_id = #{userId}
+        AND session_id = #{sessionId}
+        AND is_recycle = 0 <!-- 仅修改未回收的会话 -->
+        AND is_deleted = 0 <!-- 新增：不操作系统逻辑删除的记录 -->
+    </update>
+
+    <!-- 根据userId和sessionId更新最后一条消息内容 -->
+    <!-- 需要加一个参数，就是时间戳-->
+    <update id="updateSessionByUserIdAndSessionId">
+        UPDATE ai_chat_session
+        SET last_message_content = #{lastMessageContent},
+            update_time = NOW() -- 新增：同步更新更新时间字段（仅此处更新）
+        WHERE user_id = #{userId}
+          AND session_id = #{sessionId}
+          AND is_recycle = 0
+          AND is_deleted = 0; -- 新增：排除系统逻辑删除的记录
+    </update>
+
+    <!-- 插入会话（幂等：新增session_uuid、chat_title、role_id字段，保留status，默认值'新对话'，新增is_system_session默认0） -->
+    <!-- 插入会话（新增 last_message_content 字段） -->
+    <insert id="insertIgnore" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiChatSession">
+        INSERT IGNORE INTO ai_chat_session
+        (session_id, session_uuid, user_id, chat_title, status, is_system_session, is_deleted, is_recycle, role_id,
+        last_message_content)
+        VALUES (
+        #{sessionId},
+        #{sessionUuid},
+        #{userId},
+        #{chatTitle},
+        #{status},
+        IFNULL(#{isSystemSession}, 0),
+        0,
+        0,
+        IFNULL(#{roleId}, 1),
+        #{lastMessageContent}
+        )
+    </insert>
+
+    <!-- 切换会话回收站状态：按sessionId和userId反转is_recycle（0↔1） -->
+    <update id="toggleRecycleStatusBySessionIdAndUserId">
+        UPDATE ai_chat_session
+        SET is_recycle = 1 - is_recycle -- 核心：0→1 / 1→0 切换回收站状态
+        WHERE session_id = #{sessionId}
+          AND user_id = #{userId} -- userId是Integer，数据库BIGINT可兼容Integer
+          AND is_recycle = #{currentIsRecycle} -- 匹配新枚举的数值
+          AND is_deleted = 0; -- 新增：不操作系统逻辑删除的记录
+    </update>
+
+    <!-- 切换会话置顶状态：手动赋值时间戳，稳定无BUG -->
+    <update id="toggleTopStatusBySessionIdAndUserId">
+        UPDATE ai_chat_session
+        SET is_top = 1 - is_top,    <!-- 状态反转 -->
+        top_at = #{topAt}       <!-- 手动传入时间戳 -->
+        WHERE session_id = #{sessionId}
+        AND user_id = #{userId}
+        AND is_top = #{currentIsTop}
+        AND is_deleted = 0;
+    </update>
+
+    <!-- 更新会话未读消息数：动态SQL，有值则更新，无值不修改 -->
+    <update id="updateSessionUnreadCount">
+        UPDATE ai_chat_session
+        <set>
+            <!-- 非切分模式未读数：参数不为null则更新 -->
+            <if test="normalUnreadCount != null">
+                normal_unread_count = #{normalUnreadCount},
+            </if>
+            <!-- 切分模式未读数：参数不为null则更新 -->
+            <if test="splitUnreadCount != null">
+                split_unread_count = #{splitUnreadCount},
+            </if>
+        </set>
+        WHERE session_id = #{sessionId}
+        AND user_id = #{userId}
+        AND is_deleted = 0;
+    </update>
+
+    <!-- 🔥 强制清零会话未读消息数：同时将normal_unread_count和split_unread_count置为0 -->
+    <update id="clearSessionUnreadCount">
+        UPDATE ai_chat_session
+        SET normal_unread_count = 0,
+            split_unread_count = 0
+        WHERE session_id = #{sessionId}
+          AND user_id = #{userId}
+          AND is_deleted = 0;
+    </update>
+
+    <!-- 按sessionId和userId查询未回收的会话 -->
+    <select id="selectBySessionIdAndUserId" resultMap="AiChatSessionResultMap">
+        SELECT *
+        FROM ai_chat_session
+        WHERE session_id = #{sessionId}
+        AND user_id = #{userId}
+        AND is_recycle = 0
+        AND is_deleted = 0  <!-- 新增：排除系统逻辑删除的记录 -->
+    </select>
+
+    <!-- 根据sessionId+userId查询全量会话（不过滤回收站，仅排除系统删除） -->
+    <select id="selectFullBySessionIdAndUserId" resultType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiChatSession">
+        SELECT *
+        FROM ai_chat_session
+        WHERE session_id = #{sessionId}
+        AND user_id = #{userId}
+        AND is_deleted = 0  <!-- 仅排除系统逻辑删除，保留回收站/正常会话 -->
+    </select>
+
+    <!-- 按session_uuid和userId查询未回收、未逻辑删除的会话 -->
+    <select id="selectBySessionUuidAndUserId" resultMap="AiChatSessionResultMap">
+        SELECT *
+        FROM ai_chat_session
+        WHERE session_uuid = #{sessionUuid}
+          AND user_id = #{userId}
+          AND is_recycle = 0
+          AND is_deleted = 0
+    </select>
+
+    <!-- 批量根据userId和sessionId数组，将会话移入回收站（is_recycle=1） -->
+    <update id="batchRecycleSessionsByUserIdAndSessionIds">
+        UPDATE ai_chat_session
+        SET is_recycle = 1,
+        update_time = NOW()
+        WHERE user_id = #{userId}
+        AND session_id IN
+        <foreach collection="sessionIds" item="sessionId" open="(" separator="," close=")">
+            #{sessionId}
+        </foreach>
+        AND is_deleted = 0;
+    </update>
+
+    <!-- 批量根据session_uuid数组和userId查询未回收、未逻辑删除的会话 -->
+    <select id="selectBySessionUuidsAndUserId" resultMap="AiChatSessionResultMap">
+        SELECT *
+        FROM ai_chat_session
+        WHERE session_uuid IN
+        <foreach collection="sessionUuids" item="sessionUuid" open="(" separator="," close=")">
+            #{sessionUuid}
+        </foreach>
+        AND user_id = #{userId}
+        AND is_recycle = 0
+        AND is_deleted = 0
+    </select>
+
+    <!-- （可选）仅按session_uuid查询未回收、未逻辑删除的会话（兜底用） -->
+    <select id="selectBySessionUuid" resultMap="AiChatSessionResultMap">
+        SELECT *
+        FROM ai_chat_session
+        WHERE session_uuid = #{sessionUuid}
+          AND is_recycle = 0
+          AND is_deleted = 0
+    </select>
+
+    <!-- 按用户ID+回收站状态查询会话列表 -->
+    <select id="selectListByUserIdAndIsRecycle" resultMap="AiChatSessionResultMap">
+        SELECT *
+        FROM ai_chat_session
+        WHERE user_id = #{userId} -- 保持Integer类型适配
+        AND is_recycle = #{isRecycle}
+        AND is_deleted = 0  <!-- 新增：排除系统逻辑删除的记录 -->
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 按用户ID查询所有会话（包含删除、回收站的全部数据） -->
+    <select id="SelectUserAllSessions" resultMap="AiChatSessionResultMap">
+        SELECT *
+        FROM ai_chat_session
+        WHERE user_id = #{userId}  <!-- 仅按用户ID筛选，不限制删除/回收站状态 -->
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 物理删除1：按userId+sessionId删除创建时间<5分钟的会话（有约束确保仅1条） -->
+    <delete id="physicalDeleteByUserIdAndCreateTimeLess5Min" parameterType="map">
+        DELETE FROM ai_chat_session
+        WHERE user_id = #{userId}
+        AND session_id = #{sessionId}
+        AND create_time > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+    </delete>
+
+    <!-- 物理删除2：按userId+sessionId删除（必须在回收站：is_recycle=1） -->
+    <delete id="physicalDeleteByUserIdAndSessionIdInRecycle" parameterType="map">
+        DELETE FROM ai_chat_session
+        WHERE user_id = #{userId}
+          AND session_id = #{sessionId}
+          AND is_recycle = 1
+          AND is_deleted = 0;
+    </delete>
+
+    <!-- 逻辑删除：按userId标记所有对话为删除（is_deleted=1） -->
+    <update id="logicDeleteAllByUserId" parameterType="java.lang.Long">
+        UPDATE ai_chat_session
+        SET is_deleted = 1
+        WHERE user_id = #{userId}
+          AND is_deleted = 0;
+    </update>
+
+    <!-- 物理删除：按userId删除该用户下所有对话（高风险操作！仅用于用户注销后彻底清理等特殊场景）
+     适配logicDeleteAllByUserId的物理删除版本，直接删除全量数据，无回收站/逻辑删除限制 -->
+    <delete id="physicalDeleteAllByUserId" parameterType="java.lang.Integer">
+        DELETE FROM ai_chat_session
+        WHERE user_id = #{userId};
+    </delete>
+
+    <!-- 逻辑复原：按userId复原所有逻辑删除的对话（SAGA补偿专用，is_deleted=0） -->
+    <update id="logicRecoverAllByUserId" parameterType="java.lang.Long">
+        UPDATE ai_chat_session
+        SET is_deleted = 0
+        WHERE user_id = #{userId}
+          AND is_deleted = 1;
+    </update>
+
+</mapper>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 命名空间严格对应Mapper接口全类名 -->
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.token.AiUserTokenBalanceMapper">
+
+    <!-- ====================== 新增：结果映射集 ====================== -->
+    <resultMap id="AiUserTokenBalanceMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiUserTokenBalance">
+        <id column="balance_id" property="balanceId"/>
+        <result column="user_id" property="userId"/>
+        <result column="type_id" property="typeId"/>
+        <result column="total_consumed" property="totalConsumed"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 新增用户Token消耗总量：主键/时间数据库自动生成，仅传入必填字段 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiUserTokenBalance">
+        INSERT INTO ai_user_token_balance (user_id, type_id, total_consumed)
+        VALUES (#{userId}, #{typeId}, #{totalConsumed})
+    </insert>
+
+    <!-- 底层：根据用户+类型 原子累加Token总消耗数量 -->
+    <update id="incrementTotalConsumed">
+        UPDATE ai_user_token_balance
+        SET total_consumed = total_consumed + #{consumeAmount},
+            update_time   = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+          AND type_id = #{typeId}
+    </update>
+
+    <!-- 根据用户ID查询余额 -->
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultType="org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiUserTokenBalance">
+        SELECT *
+        FROM ai_user_token_balance
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectByUserIdAndTypeId" resultMap="AiUserTokenBalanceMap">
+        SELECT *
+        FROM ai_user_token_balance
+        WHERE user_id = #{userId}
+          AND type_id = #{typeId}
+    </select>
+
+    <!-- 根据用户ID删除记录 -->
+    <delete id="deleteByUserId" parameterType="java.lang.Integer">
+        DELETE FROM ai_user_token_balance
+        WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

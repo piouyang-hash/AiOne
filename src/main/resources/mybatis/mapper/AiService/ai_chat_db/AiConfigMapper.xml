@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.AiConfigMapper">
+
+    <!-- 通用结果集映射 -->
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiConfig">
+        <id column="config_id" property="configId" />
+        <result column="user_id" property="userId" />
+        <result column="active_chat_mode" property="activeChatMode" />
+        <result column="split_ai_message" property="splitAiMessage" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 新增AI配置 -->
+    <insert id="insertAiConfig" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiConfig">
+        INSERT INTO ai_config (
+            user_id,
+            active_chat_mode,
+            split_ai_message
+        ) VALUES (
+                     #{userId},
+                     #{activeChatMode},
+                     #{splitAiMessage}
+                 )
+    </insert>
+
+    <!-- 翻转主动聊天模式 -->
+    <update id="updateActiveChatModeByUserId" parameterType="java.lang.Integer">
+        UPDATE ai_config
+        SET active_chat_mode = 1 - active_chat_mode
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 翻转AI消息切分模式（新增） -->
+    <update id="updateSplitAiMessageByUserId" parameterType="java.lang.Integer">
+        UPDATE ai_config
+        SET split_ai_message = 1 - split_ai_message
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 根据用户ID查询AI配置 -->
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+            config_id,
+            user_id,
+            active_chat_mode,
+            split_ai_message,
+            create_time,
+            update_time
+        FROM ai_config
+        WHERE user_id = #{userId}
+    </select>
+
+</mapper>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.my_memory_db.UserHobbyRelationMapper">
+
+    <!-- 通用结果集映射（新增userId字段） -->
+    <resultMap id="UserHobbyRelationResultMap" type="org.myfx.controls.aione.AiService.entity.my_memory_db.UserHobbyRelation">
+        <id column="id" property="id"/>
+        <result column="user_info_id" property="userInfoId"/>
+        <result column="user_id" property="userId"/> <!-- 新增：userId映射（Integer类型） -->
+        <result column="hobby_id" property="hobbyId"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 新增单个关联关系（新增userId字段） -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.my_memory_db.UserHobbyRelation">
+        INSERT INTO user_hobby_relation (id, user_info_id, user_id, hobby_id)
+        VALUES (#{id}, #{userInfoId}, #{userId}, #{hobbyId})
+    </insert>
+
+    <!-- 批量新增关联关系（高效，减少数据库交互）（新增userId字段） -->
+    <insert id="batchInsert">
+        INSERT INTO user_hobby_relation (id, user_info_id, user_id, hobby_id, create_time)
+        VALUES
+        <foreach collection="relations" item="item" separator=",">
+            (#{item.id}, #{item.userInfoId}, #{item.userId}, #{item.hobbyId}, #{item.createTime})
+        </foreach>
+    </insert>
+
+    <!-- 删除用户的某个爱好（新增userId条件，双重校验） -->
+    <delete id="deleteByUserInfoIdAndHobbyIdAndUserId">
+        DELETE FROM user_hobby_relation
+        WHERE user_info_id = #{userInfoId}
+          AND hobby_id = #{hobbyId}
+          AND user_id = #{userId} -- 新增：userId条件，精准匹配用户
+    </delete>
+
+    <!-- 删除用户的所有爱好（新增userId条件，双重校验） -->
+    <delete id="deleteByUserInfoIdAndUserId" parameterType="map">
+        DELETE FROM user_hobby_relation
+        WHERE user_info_id = #{userInfoId}
+          AND user_id = #{userId} -- 新增：userId条件，精准匹配用户
+    </delete>
+
+    <!-- 根据用户ID（userInfoId+userId）查询该用户的所有爱好ID -->
+    <select id="selectHobbyIdsByUserInfoIdAndUserId" parameterType="map" resultType="java.lang.Integer">
+        SELECT hobby_id
+        FROM user_hobby_relation
+        WHERE user_info_id = #{userInfoId}
+          AND user_id = #{userId} -- 新增：userId条件，精准过滤
+    </select>
+
+    <!-- 根据爱好ID查询用户ID列表 -->
+    <select id="selectUserInfoIdsByHobbyId" parameterType="java.lang.Integer" resultType="java.lang.Long">
+        SELECT user_info_id FROM user_hobby_relation WHERE hobby_id = #{hobbyId}
+    </select>
+
+</mapper>

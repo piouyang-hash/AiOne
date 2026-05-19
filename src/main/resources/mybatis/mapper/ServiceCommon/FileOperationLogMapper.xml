@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 🔥 修改1：namespace 替换为新的 mapper 包名 -->
+<mapper namespace="org.myfx.controls.aione.ServiceCommon.mapper.FileOperationLogMapper">
+
+    <!-- 🔥 修改2：type 替换为新的实体类包名 -->
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.ServiceCommon.entity.FileOperationLog">
+        <id column="id" property="id"/>
+        <result column="business_id" property="businessId"/>
+        <result column="business_type" property="businessType"/>
+        <result column="file_path" property="filePath"/>
+        <result column="operation_type" property="operationType"/>
+        <result column="operation_status" property="operationStatus"/>
+        <result column="fail_reason" property="failReason"/>
+        <result column="operator_id" property="operatorId"/>
+    </resultMap>
+
+    <!-- 1. 查询所有记录 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+            id, business_id, business_type, file_path,
+            operation_type, operation_status, fail_reason, operator_id
+        FROM file_operation_log
+    </select>
+
+    <!-- 2. 分页查询 -->
+    <select id="selectByPage" resultMap="BaseResultMap">
+        SELECT
+            id, business_id, business_type, file_path,
+            operation_type, operation_status, fail_reason, operator_id
+        FROM file_operation_log
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 3. 新增日志（时间数据库自动生成，不写入） -->
+    <!-- 🔥 修改3：parameterType 替换为新的实体类包名 -->
+    <insert id="insertOperationLog" parameterType="org.myfx.controls.aione.ServiceCommon.entity.FileOperationLog">
+        INSERT INTO file_operation_log (
+            id, business_id, business_type, file_path,
+            operation_type, operation_status, fail_reason, operator_id
+        ) VALUES (
+                     #{id}, #{businessId}, #{businessType}, #{filePath},
+                     #{operationType}, #{operationStatus}, #{failReason}, #{operatorId}
+                 )
+    </insert>
+
+    <!-- 4. 根据ID删除 -->
+    <delete id="deleteById">
+        DELETE FROM file_operation_log WHERE id = #{id}
+    </delete>
+
+</mapper>

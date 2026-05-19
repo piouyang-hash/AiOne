@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- ======================== AI行为分值配置 Mapper ======================== -->
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.AiBehaviorScoreMapper">
+
+    <!-- 基础ResultMap：适配ai_behavior_score表字段 -->
+    <resultMap id="AiBehaviorScoreResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiBehaviorScore">
+        <id column="id" property="id"/>
+        <result column="behavior_code" property="behaviorCode"/>
+        <result column="score_type" property="scoreType"/>
+        <result column="score_val" property="scoreVal"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- ============================================== -->
+    <!-- 1. 新增（C）：插入行为分值配置 -->
+    <!-- ============================================== -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiBehaviorScore" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ai_behavior_score (behavior_code, score_type, score_val)
+        VALUES (#{behaviorCode}, #{scoreType}, #{scoreVal})
+    </insert>
+
+    <!-- ============================================== -->
+    <!-- 1. 更新（U1）：根据主键ID更新分值配置 -->
+    <!-- ============================================== -->
+    <update id="updateById" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiBehaviorScore">
+        UPDATE ai_behavior_score
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="behaviorCode != null">behavior_code = #{behaviorCode},</if>
+            <if test="scoreType != null">score_type = #{scoreType},</if>
+            <if test="scoreVal != null">score_val = #{scoreVal},</if>
+        </trim>
+        WHERE id = #{id}
+    </update>
+
+    <!-- ============================================== -->
+    <!-- 1. 查询（R1）：根据行为编码查询所有分值配置 -->
+    <!-- ============================================== -->
+    <select id="selectListByBehaviorCode" resultMap="AiBehaviorScoreResultMap">
+        SELECT id, behavior_code, score_type, score_val, create_time
+        FROM ai_behavior_score
+        WHERE behavior_code = #{behaviorCode}
+    </select>
+
+    <!-- ============================================== -->
+    <!-- 2. 查询（R2）：根据主键ID查询单条分值配置 -->
+    <!-- ============================================== -->
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="AiBehaviorScoreResultMap">
+        SELECT id, behavior_code, score_type, score_val, create_time
+        FROM ai_behavior_score
+        WHERE id = #{id}
+    </select>
+
+    <!-- ============================================== -->
+    <!-- 3. 查询（R3）：根据行为编码 + 分值类型 精准查询  -->
+    <!-- ============================================== -->
+    <select id="selectByCodeAndType" resultMap="AiBehaviorScoreResultMap">
+        SELECT id, behavior_code, score_type, score_val, create_time
+        FROM ai_behavior_score
+        WHERE behavior_code = #{behaviorCode}
+          AND score_type = #{scoreType}
+    </select>
+
+    <!-- ============================================== -->
+    <!-- 1. 删除（D1）：根据行为编码删除所有分值配置 -->
+    <!-- ============================================== -->
+    <delete id="deleteByBehaviorCode">
+        DELETE FROM ai_behavior_score
+        WHERE behavior_code = #{behaviorCode}
+    </delete>
+
+    <!-- ============================================== -->
+    <!-- 2. 删除（D2）：根据主键ID删除单条分值配置 -->
+    <!-- ============================================== -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM ai_behavior_score
+        WHERE id = #{id}
+    </delete>
+
+</mapper>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.token.AiUserPointBalanceMapper">
+
+    <!-- ====================== 结果映射集 ====================== -->
+    <resultMap id="AiUserPointBalanceMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiUserPointBalance">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="total_point" property="totalPoint"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 新增用户积分余额：主键/时间数据库自动生成，仅传入必填字段 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiUserPointBalance">
+        INSERT INTO ai_user_point_balance (user_id, total_point)
+        VALUES (#{userId}, #{totalPoint})
+    </insert>
+
+    <!-- 底层：根据用户ID 原子更新总可用积分（直接赋值为最终余额） -->
+    <update id="updateTotalPointByUserId">
+        UPDATE ai_user_point_balance
+        SET total_point = #{totalPoint},
+            update_time = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 根据用户ID查询积分余额（唯一记录） -->
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="AiUserPointBalanceMap">
+        SELECT *
+        FROM ai_user_point_balance
+        WHERE user_id = #{userId}
+    </select>
+
+    <!-- 根据用户ID删除积分记录 -->
+    <delete id="deleteByUserId" parameterType="java.lang.Integer">
+        DELETE FROM ai_user_point_balance
+        WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

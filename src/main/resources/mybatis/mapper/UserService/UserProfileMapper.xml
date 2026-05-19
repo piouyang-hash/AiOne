@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 对应你的Mapper接口路径 -->
+<mapper namespace="org.myfx.controls.aione.UserService.mapper.UserProfileMapper">
+
+    <!-- 定义字段映射关系（解决驼峰命名和下划线的对应，比如userId对应user_id） -->
+    <resultMap id="userProfileMap" type="org.myfx.controls.aione.UserService.model.entity.UserProfile">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="app_type" property="appType"/>
+        <result column="nickname" property="nickname"/>
+        <result column="bio" property="bio"/>
+        <!-- 🔥 格式统一：column在前，property在后，映射MyBatis专用相对路径字段 -->
+        <result column="avatar_url" property="avatarRelativeUrl"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 1. 新增用户信息（适配app_type列+实体appType字段） -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.UserService.model.entity.UserProfile"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_profile (user_id, app_type, nickname, bio, avatar_url)
+        VALUES (#{userId}, #{appType}, #{nickname}, #{bio}, #{avatarRelativeUrl}) <!-- 🔥 改用MyBatis专用字段 -->
+    </insert>
+
+    <!-- 根据user_id删除用户所有应用的资料（无需修改） -->
+    <delete id="deleteByUserId">
+        DELETE FROM user_profile
+        WHERE user_id = #{userId}
+    </delete>
+
+    <!-- 3. 更新用户信息（全适配app_type，使用实体appType字段） -->
+    <update id="update">
+        UPDATE user_profile
+        <set>
+            <!-- 支持更新应用标识（使用实体的appType字段） -->
+            <if test="appType != null">
+                app_type = #{appType},
+            </if>
+            <!-- 原有字段：昵称（非null且非空才更新） -->
+            <if test="nickname != null and nickname != ''">
+                nickname = #{nickname},
+            </if>
+            <!-- 原有字段：简介（允许为空字符串，null时不更新） -->
+            <if test="bio != null">
+                bio = #{bio},
+            </if>
+            <!-- 🔥 关键修改：头像URL使用MyBatis专用相对路径字段 -->
+            <if test="avatarUrl != null">
+                avatar_url = #{avatarRelativeUrl},
+            </if>
+        </set>
+        <!-- 核心：userId+app_type定位 -->
+        WHERE user_id = #{userId}
+        AND app_type = #{appType}
+    </update>
+
+    <!-- 根据user_id+app_type查询用户资料（全适配） -->
+    <select id="findByUserIdAndAppType" resultMap="userProfileMap">
+        SELECT id, user_id, app_type, nickname, bio, avatar_url, create_time
+        FROM user_profile
+        WHERE user_id = #{userId}
+          AND app_type = #{appType}
+    </select>
+
+</mapper>

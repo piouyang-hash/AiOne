@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.AiEmotionLogDetailMapper">
+
+    <!-- 基础ResultMap映射（字段与实体属性对应） -->
+    <resultMap id="AiEmotionLogDetailResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiEmotionLogDetail">
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <!-- 核心修正：移除ai_前缀，对齐数据库behavior_id + 实体behaviorId -->
+        <result column="behavior_id" property="behaviorId" />
+        <result column="emotion_type" property="emotionType" />
+        <result column="change_value" property="changeValue" />
+        <result column="value_after" property="valueAfter" />
+        <result column="change_reason" property="changeReason" />
+        <result column="behavior_time" property="behaviorTime" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 新增日志insert语句：字段完全对齐数据库表，无多余前缀 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiEmotionLogDetail">
+        INSERT INTO ai_emotion_log_detail (
+            id, user_id, behavior_id, emotion_type, change_value,
+            value_after, change_reason, behavior_time
+        ) VALUES (
+                     #{id}, #{userId}, #{behaviorId}, #{emotionType}, #{changeValue},
+                     #{valueAfter}, #{changeReason}, #{behaviorTime}
+                 )
+    </insert>
+
+    <!-- 根据ID删除日志 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM ai_emotion_log_detail WHERE id = #{id}
+    </delete>
+
+    <!-- 根据ID更新日志 -->
+    <update id="updateById" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiEmotionLogDetail">
+        UPDATE ai_emotion_log_detail
+        <set>
+            <if test="userId != null">user_id = #{userId},</if>
+            <if test="behaviorId != null">behavior_id = #{behaviorId},</if>
+            <if test="emotionType != null">emotion_type = #{emotionType},</if>
+            <if test="changeValue != null">change_value = #{changeValue},</if>
+            <if test="valueAfter != null">value_after = #{valueAfter},</if>
+            <if test="changeReason != null">change_reason = #{changeReason},</if>
+            update_time = #{updateTime}
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询单条日志 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="AiEmotionLogDetailResultMap">
+        SELECT
+        *
+        FROM ai_emotion_log_detail
+        WHERE id = #{id}
+    </select>
+
+    <!-- 条件查询日志列表 -->
+    <select id="selectList" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiEmotionLogDetail" resultMap="AiEmotionLogDetailResultMap">
+        SELECT
+        *
+        FROM ai_emotion_log_detail
+        <where>
+            <if test="id != null">AND id = #{id}</if>
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="behaviorId != null">AND behavior_id = #{behaviorId}</if>
+            <if test="emotionType != null">AND emotion_type = #{emotionType}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 按用户ID+情绪类型查询日志（高频业务） -->
+    <select id="selectByUserIdAndEmotionType" resultMap="AiEmotionLogDetailResultMap">
+        SELECT
+        *
+        FROM ai_emotion_log_detail
+        WHERE user_id = #{userId}
+          AND emotion_type = #{emotionType}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 按用户ID+情绪类型查询最新N条日志（核心：按创建时间降序+Limit限制数量） -->
+    <select id="selectLatestNByUserIdAndEmotionType" resultMap="AiEmotionLogDetailResultMap">
+        SELECT
+            *
+        FROM ai_emotion_log_detail
+        WHERE user_id = #{userId}
+          AND emotion_type = #{emotionType}
+        ORDER BY create_time DESC
+        LIMIT #{limitNum}
+    </select>
+
+</mapper>

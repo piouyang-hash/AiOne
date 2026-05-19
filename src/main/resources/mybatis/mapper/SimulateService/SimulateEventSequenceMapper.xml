@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.myfx.controls.aione.SimulationGame.mapper.SimulateEventSequenceMapper">
+
+    <!-- 结果映射保留：数据库字段→实体类属性（驼峰转换） -->
+    <resultMap id="SimulateEventSequenceResultMap" type="org.myfx.controls.aione.SimulationGame.entity.SimulateEventSequence">
+        <id column="sequence_id" property="sequenceId" />
+        <result column="version" property="version" />
+        <result column="location_code" property="locationCode" />
+        <result column="event_code" property="eventCode" />
+        <result column="seq_num" property="seqNum" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 新增语句无修改 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.SimulationGame.entity.SimulateEventSequence">
+        INSERT INTO simulate_event_sequence (
+            version,
+            location_code,
+            event_code,
+            seq_num
+        ) VALUES (
+                     #{version},
+                     #{locationCode},
+                     #{eventCode},
+                     #{seqNum}
+                 )
+    </insert>
+
+    <!-- 简化：用*替代显式字段 -->
+    <select id="selectByVersion" parameterType="java.lang.Integer" resultMap="SimulateEventSequenceResultMap">
+        SELECT *
+        FROM simulate_event_sequence
+        WHERE version = #{version}
+        ORDER BY seq_num
+    </select>
+
+    <!-- 按版本号+执行次序查询唯一事件序列规则 -->
+    <select id="selectByVersionAndSeqNum" resultMap="SimulateEventSequenceResultMap">
+        SELECT *
+        FROM simulate_event_sequence
+        WHERE version = #{version}
+        AND seq_num = #{seqNum}
+        <!-- 无需LIMIT 1：唯一索引uk_version_seq保证结果唯一，加了也不影响，可选加 -->
+        <!-- LIMIT 1 -->
+    </select>
+
+    <!-- 简化：用*替代显式字段 -->
+    <select id="listAllEventSequence" resultMap="SimulateEventSequenceResultMap">
+        SELECT *
+        FROM simulate_event_sequence
+        ORDER BY version, seq_num
+    </select>
+
+    <!-- 新增：查询「最小版本号」中「最小次序」的事件 -->
+    <select id="selectMinVersionMinSeq" resultMap="SimulateEventSequenceResultMap">
+        SELECT *
+        FROM simulate_event_sequence
+        WHERE version = (SELECT MIN(version) FROM simulate_event_sequence)
+          AND seq_num = (SELECT MIN(seq_num) FROM simulate_event_sequence WHERE version = (SELECT MIN(version) FROM simulate_event_sequence))
+    </select>
+
+    <!-- 按版本号删除 -->
+    <delete id="deleteByVersion" parameterType="java.lang.Integer">
+        DELETE FROM simulate_event_sequence
+        WHERE version = #{version}
+    </delete>
+
+</mapper>

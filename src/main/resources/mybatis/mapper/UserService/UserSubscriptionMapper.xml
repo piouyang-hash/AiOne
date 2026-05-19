@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.UserService.mapper.UserSubscriptionMapper">
+
+    <!-- 基础ResultMap：移除jdbcType配置 -->
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.UserService.model.entity.UserSubscription">
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="service_type" property="serviceType" />
+        <result column="subscription_type" property="subscriptionType" />
+        <result column="subscription_status" property="subscriptionStatus" />
+        <result column="pay_order_id" property="payOrderId" />
+        <result column="effective_time" property="effectiveTime" />
+        <result column="expire_time" property="expireTime" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="remark" property="remark" />
+    </resultMap>
+
+    <!-- 新增订阅记录：移除create_time/update_time，依赖数据库默认值；移除所有jdbcType -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.UserService.model.entity.UserSubscription">
+        INSERT INTO user_subscription (
+            id, user_id, service_type, subscription_type, subscription_status,
+            pay_order_id, effective_time, expire_time, remark
+        ) VALUES (
+                     #{id},
+                     #{userId},
+                     #{serviceType},
+                     #{subscriptionType},
+                     #{subscriptionStatus},
+                     #{payOrderId},
+                     #{effectiveTime},
+                     #{expireTime},
+                     #{remark}
+                 )
+    </insert>
+
+    <!-- 根据ID删除：移除jdbcType -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM user_subscription WHERE id = #{id}
+    </delete>
+
+    <!-- 根据ID更新（全字段）：移除jdbcType -->
+    <update id="updateById" parameterType="org.myfx.controls.aione.UserService.model.entity.UserSubscription">
+        UPDATE user_subscription
+        SET
+            user_id = #{userId},
+            service_type = #{serviceType},
+            subscription_type = #{subscriptionType},
+            subscription_status = #{subscriptionStatus},
+            pay_order_id = #{payOrderId},
+            effective_time = #{effectiveTime},
+            expire_time = #{expireTime},
+            create_time = #{createTime},
+            update_time = #{updateTime},
+            remark = #{remark}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID查询：删除Base_Column_List，直接写字段；移除jdbcType -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+        SELECT
+            id, user_id, service_type, subscription_type, subscription_status,
+            pay_order_id, effective_time, expire_time, create_time, update_time, remark
+        FROM user_subscription
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据用户ID查询列表：直接写字段；移除jdbcType -->
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT
+            id, user_id, service_type, subscription_type, subscription_status,
+            pay_order_id, effective_time, expire_time, create_time, update_time, remark
+        FROM user_subscription
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 查询用户指定服务的有效订阅：直接写字段；移除jdbcType -->
+    <select id="selectEffectiveByUserIdAndServiceType" resultMap="BaseResultMap">
+        SELECT
+            id, user_id, service_type, subscription_type, subscription_status,
+            pay_order_id, effective_time, expire_time, create_time, update_time, remark
+        FROM user_subscription
+        WHERE user_id = #{userId}
+          AND service_type = #{serviceType}
+          AND subscription_status = 1 -- 1=生效中
+          AND expire_time > NOW() -- 未过期
+        ORDER BY create_time DESC
+        LIMIT 1 -- 取最新的有效订阅
+    </select>
+
+    <!-- 批量更新订阅状态：移除jdbcType -->
+    <update id="batchUpdateStatus">
+        UPDATE user_subscription
+        SET
+        subscription_status = #{status},
+        update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

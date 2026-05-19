@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.user_behavior_db.BaseUserBehaviorMapper">
+
+    <!-- 基础ResultMap：完全匹配新表结构，无任何user_前缀 -->
+    <resultMap id="BaseUserBehaviorResultMap" type="org.myfx.controls.aione.AiService.entity.user_behavior_db.BaseUserBehavior">
+        <id column="behavior_id" property="behaviorId"/>
+        <result column="behavior_code" property="behaviorCode"/>
+        <result column="behavior_name" property="behaviorName"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 1. 新增：插入行为编码+名称 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.user_behavior_db.BaseUserBehavior" useGeneratedKeys="true" keyProperty="behaviorId">
+        INSERT INTO base_user_behavior (behavior_code, behavior_name)
+        VALUES (#{behaviorCode}, #{behaviorName})
+    </insert>
+
+    <!-- 2. 根据behavior_code更新行为名称 -->
+    <update id="updateNameByCode" parameterType="org.myfx.controls.aione.AiService.entity.user_behavior_db.BaseUserBehavior">
+        UPDATE base_user_behavior
+        SET behavior_name = #{behaviorName},
+            update_time = NOW()
+        WHERE behavior_code = #{behaviorCode}
+    </update>
+
+    <!-- 3. 根据ID动态更新 -->
+    <update id="updateById" parameterType="org.myfx.controls.aione.AiService.entity.user_behavior_db.BaseUserBehavior">
+        UPDATE base_user_behavior
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="behaviorCode != null">behavior_code = #{behaviorCode},</if>
+            <if test="behaviorName != null">behavior_name = #{behaviorName},</if>
+            update_time = NOW()
+        </trim>
+        WHERE behavior_id = #{behaviorId}
+    </update>
+
+    <!-- 4. 根据behavior_code查询 -->
+    <select id="selectByCode" resultMap="BaseUserBehaviorResultMap">
+        SELECT behavior_id, behavior_code, behavior_name, create_time, update_time
+        FROM base_user_behavior
+        WHERE behavior_code = #{behaviorCode}
+    </select>
+
+    <!-- 5. 查询所有行为 -->
+    <select id="selectAll" resultMap="BaseUserBehaviorResultMap">
+        SELECT behavior_id, behavior_code, behavior_name, create_time, update_time
+        FROM base_user_behavior
+        ORDER BY behavior_id
+    </select>
+
+    <!-- 6. 根据code删除 -->
+    <delete id="deleteByCode">
+        DELETE FROM base_user_behavior
+        WHERE behavior_code = #{behaviorCode}
+    </delete>
+
+    <!-- 7. 根据ID删除 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM base_user_behavior
+        WHERE behavior_id = #{behaviorId}
+    </delete>
+
+    <!-- 8. 根据ID查询 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="BaseUserBehaviorResultMap">
+        SELECT behavior_id, behavior_code, behavior_name, create_time, update_time
+        FROM base_user_behavior
+        WHERE behavior_id = #{behaviorId}
+    </select>
+
+</mapper>

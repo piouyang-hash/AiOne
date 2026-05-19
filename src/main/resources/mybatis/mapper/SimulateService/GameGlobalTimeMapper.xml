@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.SimulationGame.mapper.GameGlobalTimeMapper">
+
+    <!-- 标准ResultMap（按规范编写） -->
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.SimulationGame.entity.GameGlobalTime">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="global_game_seconds" property="globalGameSeconds" jdbcType="INTEGER"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 1. 查询全局游戏时间（固定ID=1） -->
+    <select id="selectGlobalTime" resultMap="BaseResultMap">
+        select id, global_game_seconds, create_time, update_time
+        from simulate_game_global_time
+        where id = 1
+    </select>
+
+    <!-- 2. 更新：游戏时间 +60 秒 -->
+    <update id="updateGlobalTimeAdd60">
+        update simulate_game_global_time
+        set global_game_seconds = global_game_seconds + 60
+        where id = 1
+    </update>
+
+</mapper>

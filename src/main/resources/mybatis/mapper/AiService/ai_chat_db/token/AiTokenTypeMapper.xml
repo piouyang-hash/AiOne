@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.token.AiTokenTypeMapper">
+
+    <!-- 结果映射：新增价格字段映射 -->
+    <resultMap id="AiTokenTypeMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiTokenType">
+        <id column="type_id" property="typeId"/>
+        <result column="vendor" property="vendor"/>
+        <result column="token_side" property="tokenSide"/>
+        <result column="type_code" property="typeCode"/>
+        <result column="type_name" property="typeName"/>
+        <result column="price_per_million" property="pricePerMillion"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 新增：包含价格字段 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiTokenType">
+        INSERT INTO ai_token_type (vendor, token_side, type_code, type_name, price_per_million, status)
+        VALUES (#{vendor}, #{tokenSide}, #{typeCode}, #{typeName}, #{pricePerMillion}, #{status})
+    </insert>
+
+    <!-- 根据ID修改：包含价格字段 -->
+    <update id="updateByTypeId" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiTokenType">
+        UPDATE ai_token_type
+        SET vendor      = #{vendor},
+        token_side  = #{tokenSide},
+        type_code   = #{typeCode},
+        type_name   = #{typeName},
+        price_per_million = #{pricePerMillion},
+        status      = #{status}
+        WHERE type_id = #{typeId}
+    </update>
+
+    <!-- 根据 typeCode 查询 -->
+    <select id="selectByTypeCode" resultMap="AiTokenTypeMap">
+        SELECT * FROM ai_token_type WHERE type_code = #{typeCode}
+    </select>
+
+    <!-- 根据ID查询 -->
+    <select id="selectByTypeId" resultMap="AiTokenTypeMap">
+        SELECT * FROM ai_token_type WHERE type_id = #{typeId}
+    </select>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteByTypeId">
+        DELETE FROM ai_token_type WHERE type_id = #{typeId}
+    </delete>
+
+</mapper>

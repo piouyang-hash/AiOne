@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.AiPersonalityConfigMapper">
+
+    <!-- 基础字段映射 ResultMap（移除session_id） -->
+    <resultMap id="AiPersonalityConfigResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiPersonalityConfig">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="ai_personality_code" property="aiPersonalityCode"/>
+        <result column="personality_strength_code" property="personalityStrengthCode"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_valid" property="isValid"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <!-- 查询指定用户下最强烈的AI性格配置（适配单用户维度） -->
+    <select id="selectPriorityConfig" resultMap="AiPersonalityConfigResultMap">
+        SELECT
+        id, user_id, ai_personality_code, personality_strength_code, create_time, update_time, is_valid, is_deleted
+        FROM
+        ai_personality_config
+        WHERE
+        user_id = #{userId}
+        AND is_valid = 1
+        AND is_deleted = 0 <!-- 过滤已逻辑删除的数据 -->
+        <!-- 性格优先级：code越大越强烈，同code选最早创建的 -->
+        ORDER BY
+        ai_personality_code DESC,
+        create_time
+        LIMIT 1
+    </select>
+
+    <!-- 新增配置（移除session_id、时间字段，由数据库自动管理） -->
+    <insert id="insertAiPersonalityConfig" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiPersonalityConfig">
+        INSERT INTO ai_personality_config (
+            id, user_id, ai_personality_code, personality_strength_code, is_valid
+        ) VALUES (
+                     #{id}, #{userId}, #{aiPersonalityCode}, #{personalityStrengthCode}, #{isValid}
+                 )
+    </insert>
+
+    <!-- 按id+userId动态更新（非空字段才更新，移除session_id） -->
+    <update id="updateByIdAndUserId" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiPersonalityConfig">
+        UPDATE ai_personality_config
+        SET
+        <if test="aiPersonalityCode != null">ai_personality_code = #{aiPersonalityCode},</if>
+        <if test="personalityStrengthCode != null">personality_strength_code = #{personalityStrengthCode},</if>
+        <if test="isValid != null">is_valid = #{isValid},</if>
+        update_time = NOW()
+        WHERE
+        id = #{id}
+        AND user_id = #{userId}
+        AND is_deleted = 0 <!-- 过滤已逻辑删除的数据 -->
+    </update>
+
+    <!-- 按userId切换is_valid状态（移除session_id） -->
+    <update id="switchValidByUserId">
+        UPDATE ai_personality_config
+        SET
+        is_valid = #{isValid},
+        update_time = NOW()
+        WHERE
+        user_id = #{userId}
+        AND is_deleted = 0 <!-- 过滤已逻辑删除的数据 -->
+    </update>
+
+    <!-- 按id精准切换is_valid状态（精确关闭/启用，保留原逻辑） -->
+    <update id="switchValidById">
+        UPDATE ai_personality_config
+        SET
+        is_valid = #{isValid},
+        update_time = NOW()
+        WHERE
+        id = #{id}
+        AND is_deleted = 0 <!-- 补充逻辑删除过滤 -->
+    </update>
+
+    <!-- 按userId查询所有AI性格配置（移除session_id，补充逻辑删除过滤） -->
+    <select id="selectAiPersonalityConfigByUserId" resultMap="AiPersonalityConfigResultMap">
+        SELECT
+            id, user_id, ai_personality_code, personality_strength_code, create_time, update_time, is_valid, is_deleted
+        FROM
+            ai_personality_config
+        WHERE
+            user_id = #{userId}
+          AND is_deleted = 0
+        ORDER BY
+            create_time DESC
+    </select>
+
+</mapper>

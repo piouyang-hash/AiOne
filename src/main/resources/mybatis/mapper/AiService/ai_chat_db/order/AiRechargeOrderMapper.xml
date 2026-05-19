@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.order.AiRechargeOrderMapper">
+
+    <!-- AI积分充值订单 ResultMap：数据库字段 → 实体类驼峰字段 -->
+    <resultMap id="AiRechargeOrderResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.order.AiRechargeOrder">
+        <id column="id" property="id" /> <!-- 主键 -->
+        <result column="user_id" property="userId" />
+        <result column="amount" property="amount" />
+        <result column="point" property="point" /> <!-- 新增：AI积分字段 -->
+        <result column="business_type" property="businessType" />
+        <result column="pay_type" property="payType" />
+        <result column="status" property="status" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="pay_time" property="payTime" />
+        <result column="remark" property="remark" />
+    </resultMap>
+
+    <!-- 调整后：insert插入核心字段 + 支付方式，create_time/update_time数据库自动处理 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.order.AiRechargeOrder">
+        INSERT INTO ai_recharge_order (
+        id,
+        user_id,
+        amount,
+        point,  <!-- 新增：AI积分 -->
+        business_type,  <!-- 业务类型固定为1（充值） -->
+        status,         <!-- 订单状态默认待支付 -->
+        pay_type,       <!-- 新增：支付方式 -->
+        remark          <!-- 备注 -->
+        <!-- 以下字段不填：pay_time（支付后填）、update_time（数据库自动刷新）、create_time（数据库默认） -->
+        ) VALUES (
+        #{id},
+        #{userId},
+        #{amount},
+        #{point},
+        #{businessType}, <!-- 已赋值为OrderTypeEnum.RECHARGE（code=1） -->
+        #{status},       <!-- 已赋值为PayStatusEnum.WAIT_PAY（code=0） -->
+        #{payType},      <!-- 支付方式 -->
+        #{remark}
+        )
+    </insert>
+
+    <!-- 优化后通用更新：覆盖状态/pay_time/update_time，补全userId校验，移除支付方式修改 -->
+    <update id="updateById" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.order.AiRechargeOrder">
+        UPDATE ai_recharge_order
+        SET
+        <!-- 动态更新：传了哪个字段就更哪个，没传就不更 -->
+        <if test="status != null">status = #{status},</if>
+        <if test="payTime != null">pay_time = #{payTime},</if>
+        update_time = CURRENT_TIMESTAMP <!-- 每次更新都自动更update_time，无需手动传 -->
+        WHERE id = #{id}
+        AND user_id = #{userId} <!-- 补全userId，防串改（核心！） -->
+        AND status = #{originalStatus} <!-- 统一用originalStatus，和业务逻辑对齐 -->
+    </update>
+
+    <!-- 修正点1：selectByOrderId 用定义好的 ResultMap（而非 resultType），避免字段映射不全 -->
+    <select id="selectByOrderId" parameterType="java.lang.Long" resultMap="AiRechargeOrderResultMap">
+        SELECT
+        *
+        FROM ai_recharge_order
+        WHERE id = #{id} <!-- 主键id就是订单ID，逻辑正确 -->
+    </select>
+
+    <!-- 根据用户ID查询该用户的所有充值订单 -->
+    <select id="selectByUserId"
+            parameterType="java.lang.Integer"
+            resultMap="AiRechargeOrderResultMap">
+        SELECT
+            *
+        FROM ai_recharge_order
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 新增：根据订单ID+用户ID查询订单（精准匹配，防止查询他人订单） -->
+    <select id="getByIdAndUserId" resultMap="AiRechargeOrderResultMap">
+        SELECT
+        *
+        FROM ai_recharge_order
+        WHERE id = #{orderId}        <!-- 订单ID（主键） -->
+        AND user_id = #{userId}   <!-- 用户ID（防止查询/修改他人订单） -->
+        LIMIT 1  <!-- 强制返回单条，订单ID是主键，理论上只有1条，加LIMIT更安全 -->
+    </select>
+
+    <!-- 动态版：删除指定id+userId且status等于传入值的订单（示例：传入0则删status=0的订单） -->
+    <delete id="deleteByIdAndUserIdAndStatus" parameterType="map">
+        DELETE FROM ai_recharge_order
+        WHERE id = #{id}
+        AND user_id = #{userId}
+        AND status = #{status} <!-- 动态匹配传入的status值 -->
+    </delete>
+
+</mapper>

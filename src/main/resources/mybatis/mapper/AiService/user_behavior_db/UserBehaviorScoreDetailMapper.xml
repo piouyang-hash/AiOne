@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.user_behavior_db.UserBehaviorScoreDetailMapper">
+
+    <!-- 基础ResultMap：移除session_id字段映射，保留核心业务字段 -->
+    <resultMap id="UserBehaviorScoreDetailResultMap" type="org.myfx.controls.aione.AiService.entity.user_behavior_db.UserBehaviorScoreDetail">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="behavior_id" property="behaviorId"/>
+        <result column="feature_type" property="featureType"/>
+        <result column="add_score" property="addScore"/>
+        <result column="score_after" property="scoreAfter"/>
+        <result column="behavior_time" property="behaviorTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 1. 新增（C）：移除session_id字段，时间由数据库自动填充 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.user_behavior_db.UserBehaviorScoreDetail">
+        INSERT INTO user_behavior_score_detail (id, user_id, behavior_id, feature_type, add_score, score_after, behavior_time)
+        VALUES (#{id}, #{userId}, #{behaviorId}, #{featureType}, #{addScore}, #{scoreAfter}, #{behaviorTime})
+    </insert>
+
+    <!-- 2. 查询：根据userId查询该用户所有明细记录（移除session_id，简化方法名） -->
+    <select id="selectListByUserId" resultMap="UserBehaviorScoreDetailResultMap">
+        SELECT id, user_id, behavior_id, feature_type, add_score, score_after, behavior_time, create_time, update_time
+        FROM user_behavior_score_detail
+        WHERE user_id = #{userId}
+        ORDER BY behavior_time DESC
+    </select>
+
+    <!-- 3. 查询：根据userId + feature_type查询该用户对应特征的所有明细记录 -->
+    <select id="selectListByUserIdAndFeatureType" resultMap="UserBehaviorScoreDetailResultMap">
+        SELECT id, user_id, behavior_id, feature_type, add_score, score_after, behavior_time, create_time, update_time
+        FROM user_behavior_score_detail
+        WHERE user_id = #{userId}
+          AND feature_type = #{featureType}
+        ORDER BY behavior_time DESC
+    </select>
+
+    <!-- 4. 查询：根据userId + feature_type查询该用户对应特征的最新一条明细记录 -->
+    <select id="selectLatestByUserIdAndFeatureType" resultMap="UserBehaviorScoreDetailResultMap">
+        SELECT id, user_id, behavior_id, feature_type, add_score, score_after, behavior_time, create_time, update_time
+        FROM user_behavior_score_detail
+        WHERE user_id = #{userId}
+          AND feature_type = #{featureType}
+        ORDER BY behavior_time DESC
+        LIMIT 1
+    </select>
+
+    <!-- 5. 删除：根据userId删除该用户所有明细记录（保留核心删除方法） -->
+    <delete id="deleteByUserId" parameterType="java.lang.Integer">
+        DELETE FROM user_behavior_score_detail
+        WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 命名空间必须与Mapper接口全类名一致 -->
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.AiChatSessionSystemPromptMapper">
+
+    <!-- 结果集映射：下划线字段 → 驼峰实体字段 -->
+    <resultMap id="AiChatSessionSystemPromptResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiChatSessionSystemPrompt">
+        <id column="id" property="id"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="user_id" property="userId"/>
+        <result column="serial_number" property="serialNumber"/>
+        <result column="system_prompt" property="systemPrompt"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 新增系统提示词（不包含时间字段，数据库自动生成） -->
+    <insert id="insert">
+        INSERT INTO ai_chat_session_system_prompt
+            (id, session_id, user_id, serial_number, system_prompt)
+        VALUES
+            (#{id}, #{sessionId}, #{userId}, #{serialNumber}, #{systemPrompt})
+    </insert>
+
+    <select id="selectMaxSerialNumber" resultType="java.lang.Integer">
+        SELECT IFNULL(MAX(serial_number), 0)
+        FROM ai_chat_session_system_prompt
+        WHERE user_id = #{userId}
+          AND session_id = #{sessionId}
+    </select>
+
+    <select id="selectSerialNumberZero" resultMap="AiChatSessionSystemPromptResultMap">
+        SELECT id, session_id, user_id, serial_number, system_prompt, create_time, update_time
+        FROM ai_chat_session_system_prompt
+        WHERE user_id = #{userId}
+          AND session_id = #{sessionId}
+          AND serial_number = 0
+        LIMIT 1 -- 最多返回1条（避免多条0的情况）
+    </select>
+
+    <!-- 根据用户ID+会话ID查询最新的系统提示词（排除序列号0） -->
+    <select id="selectLatestByUserIdAndSessionId" resultMap="AiChatSessionSystemPromptResultMap">
+        SELECT id, session_id, user_id, serial_number, system_prompt, create_time, update_time
+        FROM ai_chat_session_system_prompt
+        WHERE user_id = #{userId}
+          AND session_id = #{sessionId}
+          AND serial_number > 0 -- 新增：仅查询序列号大于0的记录
+        ORDER BY serial_number DESC
+        LIMIT 1
+    </select>
+
+    <!-- 根据用户ID+会话ID查询所有系统提示词 -->
+    <select id="selectAllByUserIdAndSessionId" resultMap="AiChatSessionSystemPromptResultMap">
+        SELECT id, session_id, user_id, serial_number, system_prompt, create_time, update_time
+        FROM ai_chat_session_system_prompt
+        WHERE user_id = #{userId}
+          AND session_id = #{sessionId}
+        ORDER BY serial_number
+    </select>
+
+    <!-- 根据用户ID+会话ID删除所有系统提示词 -->
+    <delete id="deleteByUserIdAndSessionId">
+        DELETE FROM ai_chat_session_system_prompt
+        WHERE user_id = #{userId}
+          AND session_id = #{sessionId}
+    </delete>
+
+    <!-- 根据用户ID删除所有系统提示词 -->
+    <delete id="deleteByUserId">
+        DELETE FROM ai_chat_session_system_prompt
+        WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

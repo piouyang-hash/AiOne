@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 命名空间必须与Mapper接口全类名一致 -->
+<mapper namespace="org.myfx.controls.aione.UserService.mapper.UserFeedbackMapper">
+
+    <!-- 基础结果映射：表字段（下划线）→ 实体类（驼峰） -->
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.UserService.model.entity.UserFeedback">
+        <id column="id" property="id"/> <!-- 主键 -->
+        <result column="user_id" property="userId"/> <!-- 外键关联用户ID -->
+        <result column="feedback_type" property="feedbackType"/> <!-- 反馈类型 -->
+        <result column="content" property="content"/> <!-- 反馈内容 -->
+        <result column="contact" property="contact"/> <!-- 联系方式 -->
+        <result column="status" property="status"/> <!-- 处理状态 -->
+        <result column="reply_content" property="replyContent"/> <!-- 回复内容 -->
+        <result column="reply_time" property="replyTime"/> <!-- 回复时间 -->
+        <result column="create_time" property="createTime"/> <!-- 提交时间 -->
+        <result column="update_time" property="updateTime"/> <!-- 更新时间 -->
+    </resultMap>
+
+    <!-- 新增反馈：无需传id/create_time/update_time（数据库自动生成） -->
+    <insert id="insertFeedback" parameterType="org.myfx.controls.aione.UserService.model.entity.UserFeedback"
+            useGeneratedKeys="true" keyProperty="id"> <!-- 自动回填自增id到实体类 -->
+        INSERT INTO user_feedback (
+        user_id, feedback_type, content, contact, status
+        ) VALUES (
+        #{userId}, #{feedbackType}, #{content}, #{contact}, #{status}
+        )
+    </insert>
+
+    <!-- 根据ID删除反馈（管理员操作） -->
+    <delete id="deleteFeedbackById" parameterType="java.lang.Integer">
+        DELETE FROM user_feedback WHERE id = #{id}
+    </delete>
+
+    <!-- 根据用户ID删除反馈（用户注销时批量删除） -->
+    <delete id="deleteFeedbackByUserId" parameterType="java.lang.Integer">
+        DELETE FROM user_feedback WHERE user_id = #{userId}
+    </delete>
+
+    <!-- XML里的更新语句 -->
+    <update id="updateFeedback" parameterType="org.myfx.controls.aione.UserService.model.entity.UserFeedback">
+        UPDATE user_feedback
+        SET reply_content = #{replyContent},
+            status = #{status},
+            reply_time = #{replyTime},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT * FROM user_feedback WHERE id = #{id}
+    </select>
+
+</mapper>

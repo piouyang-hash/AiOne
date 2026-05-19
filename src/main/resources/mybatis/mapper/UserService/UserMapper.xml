@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- namespace 必须和上面的 UserMapper 接口路径一致！ -->
+<mapper namespace="org.myfx.controls.aione.UserService.mapper.UserMapper">
+
+    <!-- 定义User实体的字段映射关系（显式声明，规范清晰） -->
+    <resultMap id="userMap" type="org.myfx.controls.aione.UserService.model.entity.User">
+        <id property="id" column="id"/> <!-- 主键映射 -->
+        <result property="password" column="password"/> <!-- 密码 -->
+        <result property="email" column="email"/> <!-- 邮箱 -->
+        <result property="role" column="role"/> <!-- 新增role字段映射 -->
+        <result property="isDeleted" column="is_deleted"/> <!-- 新增：逻辑删除标记 -->
+        <result property="createTime" column="create_time"/> <!-- 补充createTime映射（之前漏了） -->
+        <result property="updateTime" column="update_time"/> <!-- 新增：更新时间 -->
+    </resultMap>
+
+    <!-- 新增用户：删除username相关的列和参数 -->
+    <insert id="add" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user (password, email)  <!-- 删掉username列 -->
+        VALUES (#{password}, #{email});    <!-- 删掉username参数 -->
+    </insert>
+
+    <!-- 注册失败补偿：物理删除5分钟内创建的用户 -->
+    <delete id="physicalDeleteUserForRegisterFailCompensation">
+        DELETE FROM user
+        WHERE id = #{id}
+          AND create_time > DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+    </delete>
+
+    <!-- 逻辑删除用户：将is_deleted标记为1 -->
+    <update id="logicalDeleteById">
+        UPDATE user
+        SET is_deleted = 1,
+            update_time = NOW()
+        WHERE id = #{id}
+          AND is_deleted = 0
+    </update>
+
+    <!-- 逻辑复原用户：将is_deleted从1改回0 -->
+    <update id="recoverLogicalDeleteById">
+        UPDATE user
+        SET is_deleted = 0,
+            update_time = NOW()
+        WHERE id = #{id}
+          AND is_deleted = 1
+    </update>
+
+    <!-- 物理删除用户：从数据库中彻底删除，只允许删除已逻辑删除的记录 -->
+    <delete id="physicalDeleteById">
+        DELETE FROM user
+        WHERE id = #{id}
+          AND is_deleted = 1
+    </delete>
+
+    <!-- 更新密码 -->
+    <update id="updatePassword" parameterType="org.myfx.controls.aione.UserService.model.entity.User">
+        UPDATE user
+        SET password = #{password},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND is_deleted = 0
+    </update>
+
+    <!-- 更新邮箱 -->
+    <update id="updateEmail">
+        UPDATE user
+        SET email = #{email},
+            update_time = NOW()
+        WHERE id = #{id}
+          AND is_deleted = 0
+    </update>
+
+    <!-- 提升为管理员 -->
+    <update id="updateUserRoleToAdmin" parameterType="java.lang.Integer">
+        UPDATE user
+        SET role = 1,   <!--管理员身份-->
+        update_time = NOW()
+        WHERE id = #{id}
+        AND is_deleted = 0
+    </update>
+
+    <!-- 根据ID和删除状态查询用户 -->
+    <select id="findById" resultMap="userMap">
+        SELECT id, password, email, role, is_deleted, create_time, update_time
+        FROM user
+        WHERE id = #{id}
+          AND is_deleted = #{isDeleted}
+    </select>
+
+    <!-- 根据邮箱查询：只查询未删除的用户 -->
+    <select id="findByEmail" parameterType="java.lang.String" resultMap="userMap">
+        SELECT id, password, email, role, is_deleted, create_time, update_time
+        FROM user
+        WHERE email = #{email}
+          AND is_deleted = 0
+    </select>
+
+    <!-- 检查邮箱是否存在：只检查未删除的用户 -->
+    <select id="existsByEmail" resultType="boolean">
+        SELECT COUNT(1) > 0
+        FROM user
+        WHERE email = #{email}
+          AND is_deleted = 0
+    </select>
+
+    <!-- 分页查询用户ID：只查询未删除的用户 -->
+    <select id="selectUserIdsByBatch" resultType="java.lang.Integer">
+        SELECT id
+        FROM user
+        WHERE is_deleted = 0
+        ORDER BY id
+        LIMIT #{offset}, #{batchSize}
+    </select>
+
+</mapper>

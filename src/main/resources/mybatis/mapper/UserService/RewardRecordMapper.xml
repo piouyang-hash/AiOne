@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 命名空间替换为你的mapper接口路径 -->
+<mapper namespace="org.myfx.controls.aione.UserService.mapper.RewardRecordMapper">
+
+    <!-- resultMap：映射表字段与实体类属性（不变，查询时仍需返回时间） -->
+    <resultMap id="RewardRecordResultMap" type="org.myfx.controls.aione.UserService.model.entity.RewardRecord">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="user_email" property="userEmail"/>
+        <result column="reward_amount" property="rewardAmount"/>
+        <result column="reward_time" property="rewardTime"/> <!-- 查的时候能拿到自动生成的时间 -->
+        <result column="remark" property="remark"/>
+    </resultMap>
+
+    <!-- insert：新增打赏记录（去掉reward_time，由数据库自动生成） -->
+    <insert id="insertRewardRecord" parameterType="org.myfx.controls.aione.UserService.model.entity.RewardRecord">
+        INSERT INTO reward_record (user_id,
+                                   user_username,
+                                   user_email,
+                                   reward_amount,
+                                   remark)
+        VALUES (#{userId},
+                #{userUsername},
+                #{userEmail},
+                #{rewardAmount},
+                #{remark})
+    </insert>
+
+</mapper>

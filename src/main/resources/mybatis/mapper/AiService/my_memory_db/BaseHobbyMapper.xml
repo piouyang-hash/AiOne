@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace必须对应Mapper接口全类名 -->
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.my_memory_db.BaseHobbyMapper">
+
+    <!-- 通用结果集映射 -->
+    <resultMap id="BaseHobbyResultMap" type="org.myfx.controls.aione.AiService.entity.my_memory_db.BaseHobby">
+        <id column="hobby_id" property="hobbyId"/>
+        <result column="hobby_name" property="hobbyName"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 新增爱好（实体类） -->
+    <insert id="insertHobby" parameterType="org.myfx.controls.aione.AiService.entity.my_memory_db.BaseHobby" useGeneratedKeys="true" keyProperty="hobbyId">
+        INSERT INTO base_hobby (hobby_name)
+        VALUES (#{hobbyName}) <!-- 参数名：hobbyName，对应字符串类型的爱好名称 -->
+    </insert>
+
+    <!-- 根据ID删除爱好 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM base_hobby WHERE hobby_id = #{hobbyId}
+    </delete>
+
+    <!-- 根据ID修改爱好名称 -->
+    <update id="updateNameById">
+        UPDATE base_hobby
+        SET hobby_name = #{hobbyName}, update_time = NOW()
+        WHERE hobby_id = #{hobbyId}
+    </update>
+
+    <!-- 根据ID查询爱好 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="BaseHobbyResultMap">
+        SELECT hobby_id, hobby_name, create_time, update_time
+        FROM base_hobby
+        WHERE hobby_id = #{hobbyId}
+    </select>
+
+    <!-- 根据名称查询爱好 -->
+    <select id="selectByName" resultMap="BaseHobbyResultMap">
+        SELECT hobby_id, hobby_name, create_time, update_time
+        FROM base_hobby
+        WHERE hobby_name = #{hobbyName}
+    </select>
+
+    <!-- 查询所有爱好 -->
+    <select id="selectAll" resultMap="BaseHobbyResultMap">
+        SELECT hobby_id, hobby_name, create_time, update_time
+        FROM base_hobby
+        ORDER BY hobby_id
+    </select>
+
+</mapper>

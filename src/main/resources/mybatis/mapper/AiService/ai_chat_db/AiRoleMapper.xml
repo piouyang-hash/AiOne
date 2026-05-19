@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 命名空间对应Mapper接口全路径 -->
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.AiRoleMapper">
+
+    <!-- 通用结果集映射 -->
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiRole">
+        <id column="role_id" property="roleId" />
+        <result column="role_code" property="roleCode" />
+        <result column="role_desc" property="roleDesc" />
+        <result column="persona_core" property="personaCore" />
+        <result column="persona_tone" property="personaTone" />
+        <result column="avatar_path" property="avatarRelativePath" />  <!-- 保留不动 -->
+        <result column="create_user_id" property="createUserId" />    <!-- 新增：创建人ID -->
+        <result column="role_status" property="roleStatus" />        <!-- 新增：角色状态 -->
+        <result column="visible_scope" property="visibleScope" />    <!-- 新增：可见范围 -->
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 新增：不包含create_time/update_time，数据库自动填充 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiRole">
+        INSERT INTO ai_role (
+            role_code, role_desc, persona_core, persona_tone,
+            avatar_path, create_user_id, role_status, visible_scope
+        )
+        VALUES (
+                   #{roleCode}, #{roleDesc}, #{personaCore}, #{personaTone},
+                   #{avatarRelativePath}, #{createUserId}, #{roleStatus}, #{visibleScope}
+               )
+    </insert>
+
+    <!-- 根据主键ID修改AI角色：仅更新非空字段，update_time强制刷新 -->
+    <update id="updateById" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiRole">
+        UPDATE ai_role
+        SET
+        <!-- 动态更新：字段非空才更新 -->
+        <if test="roleCode != null and roleCode != ''">role_code = #{roleCode},</if>
+        <if test="roleDesc != null">role_desc = #{roleDesc},</if>
+        <if test="personaCore != null">persona_core = #{personaCore},</if>
+        <if test="personaTone != null and personaTone != ''">persona_tone = #{personaTone},</if>
+        <if test="avatarPath != null">avatar_path = #{avatarRelativePath},</if>
+        <if test="createUserId != null">create_user_id = #{createUserId},</if>
+        <if test="roleStatus != null">role_status = #{roleStatus},</if>
+        <if test="visibleScope != null">visible_scope = #{visibleScope},</if>
+        <!-- 强制刷新更新时间 -->
+        update_time = CURRENT_TIMESTAMP
+        WHERE
+        role_id = #{roleId} <!-- 仅保留主键条件 -->
+    </update>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        DELETE FROM ai_role WHERE role_id = #{roleId}
+    </delete>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT * FROM ai_role WHERE role_id = #{roleId}
+    </select>
+
+    <!-- 根据创建人ID查询用户创建的AI角色列表 -->
+    <select id="selectListByUserId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        SELECT *
+        FROM ai_role
+        WHERE create_user_id = #{userId}
+    </select>
+
+    <!-- 根据角色编码查询 -->
+    <select id="selectByCode" parameterType="java.lang.String" resultMap="BaseResultMap">
+        SELECT * FROM ai_role WHERE role_code = #{roleCode}
+    </select>
+
+    <!-- 查询所有 -->
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT * FROM ai_role
+    </select>
+
+</mapper>

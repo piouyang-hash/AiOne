@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.myfx.controls.aione.ServiceCommon.mapper.FileDeleteFailedLogMapper">
+
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.ServiceCommon.entity.FileDeleteFailedLog">
+        <id column="id" property="id"/>
+        <result column="business_id" property="businessId"/>
+        <result column="file_path" property="filePath"/>
+        <result column="business_type" property="businessType"/>
+        <result column="fail_count" property="failCount"/>
+        <result column="fail_reason" property="failReason"/>
+        <result column="create_time" property="createTime"/>
+        <result column="last_retry_time" property="lastRetryTime"/>
+        <result column="is_resolved" property="isResolved"/>
+    </resultMap>
+
+    <!-- 1. 新增：查询所有记录（基础版） -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT
+            id, business_id, file_path, business_type,
+            fail_count, fail_reason, create_time, last_retry_time, is_resolved
+        FROM file_delete_failed_log
+    </select>
+
+    <!-- 2. 新增：分页查询（推荐，避免大数据量性能问题） -->
+    <select id="selectByPage" parameterType="map" resultMap="BaseResultMap">
+        SELECT
+            id, business_id, file_path, business_type,
+            fail_count, fail_reason, create_time, last_retry_time, is_resolved
+        FROM file_delete_failed_log
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <!-- 插入日志：parameterType前缀同步修改为aione.ServiceCommon -->
+    <insert id="insertFailedLog" parameterType="org.myfx.controls.aione.ServiceCommon.entity.FileDeleteFailedLog">
+        INSERT INTO file_delete_failed_log (
+            id, business_id, file_path, business_type,
+            fail_count, fail_reason, create_time, last_retry_time, is_resolved
+        ) VALUES (
+                     #{id}, #{businessId}, #{filePath}, #{businessType},
+                     #{failCount}, #{failReason}, #{createTime}, #{lastRetryTime}, #{isResolved}
+                 )
+    </insert>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteById">
+        DELETE FROM file_delete_failed_log WHERE id = #{id}
+    </delete>
+
+    <!-- 删除已解决的日志 -->
+    <delete id="deleteResolvedLogs">
+        DELETE FROM file_delete_failed_log WHERE is_resolved = #{isResolved}
+    </delete>
+
+</mapper>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.AiEmotionRealStateMapper">
+
+    <!-- 基础ResultMap映射（移除session_id，适配单用户维度） -->
+    <resultMap id="AiEmotionRealStateResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiEmotionRealState">
+        <id column="id" property="id" />
+        <result column="user_id" property="userId" />
+        <result column="like_value" property="likeValue" />
+        <result column="activity_value" property="activityValue" />
+        <result column="familiarity" property="familiarity" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="is_valid" property="isValid" />
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <!-- 新增（移除session_id，使用数据库默认值） -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiEmotionRealState">
+        INSERT INTO ai_emotion_real_state
+            (id, user_id, like_value, activity_value, familiarity, is_valid)
+        VALUES
+            (#{id}, #{userId}, #{likeValue}, #{activityValue}, #{familiarity}, #{isValid})
+    </insert>
+
+    <!-- 核心情绪字段更新：仅更新喜爱值/活跃度/熟悉度，基于user_id定位（方法名语义对齐） -->
+    <update id="updateEmotionByUserId" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiEmotionRealState">
+        UPDATE ai_emotion_real_state
+        SET
+        <!-- 仅动态更新三个核心情绪字段 -->
+        <if test="likeValue != null">like_value = #{likeValue},</if>
+        <if test="activityValue != null">activity_value = #{activityValue},</if>
+        <if test="familiarity != null">familiarity = #{familiarity},</if>
+        <!-- 自动刷新更新时间 -->
+        update_time = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+        AND is_deleted = 0 <!-- 增加逻辑删除过滤，避免更新已删除数据 -->
+    </update>
+
+    <!-- 单独的is_valid状态切换语句：仅用于切换用户AI情绪状态有效性，基于user_id -->
+    <update id="updateIsValidByUserId" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiEmotionRealState">
+        UPDATE ai_emotion_real_state
+        SET
+        is_valid = #{isValid},
+        update_time = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+        AND is_deleted = 0 <!-- 增加逻辑删除过滤 -->
+    </update>
+
+    <!-- 根据ID查询（保留，补充逻辑删除过滤） -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="AiEmotionRealStateResultMap">
+        SELECT
+        id, user_id, like_value, activity_value, familiarity, create_time, update_time, is_valid, is_deleted
+        FROM ai_emotion_real_state
+        WHERE id = #{id}
+        AND is_deleted = 0 <!-- 过滤已删除数据 -->
+    </select>
+
+    <!-- 核心查询：根据用户ID查询（移除session_id，补充逻辑删除过滤） -->
+    <select id="selectByUserId" parameterType="java.lang.Integer" resultMap="AiEmotionRealStateResultMap">
+        SELECT
+        id, user_id, like_value, activity_value, familiarity, create_time, update_time, is_valid, is_deleted
+        FROM ai_emotion_real_state
+        WHERE user_id = #{userId}
+        AND is_deleted = 0 <!-- 过滤已删除数据 -->
+    </select>
+
+    <!-- 查询所有活跃度为100的用户ID -->
+    <select id="selectUserIdsByActivityValue100" resultType="java.lang.Integer">
+        SELECT user_id
+        FROM ai_emotion_real_state
+        WHERE activity_value = 100
+        AND is_deleted = 0 <!-- 过滤已删除数据 -->
+        ORDER BY update_time DESC <!-- 优先处理最近活跃度达100的用户 -->
+    </select>
+
+    <!-- 查询喜爱度大于指定阈值的用户ID -->
+    <select id="selectUserIdsByLikeValueGtThreshold" resultType="java.lang.Integer">
+        SELECT user_id
+        FROM ai_emotion_real_state
+        WHERE like_value > #{likeThreshold}
+        AND is_deleted = 0 <!-- 过滤已删除数据 -->
+        ORDER BY update_time DESC <!-- 优先处理最近更新的用户 -->
+    </select>
+
+    <!-- 查询所有有效且未删除的情绪状态数据（排除is_valid/is_deleted字段返回） -->
+    <select id="selectAllValidNonDeletedAiEmotionRealState" resultMap="AiEmotionRealStateResultMap">
+        SELECT
+        id, user_id, like_value, activity_value, familiarity, create_time, update_time
+        FROM ai_emotion_real_state
+        WHERE
+        is_deleted = 0  <!-- 0表示未删除 -->
+        AND is_valid = 1  <!-- 1表示有效（0为无效） -->
+    </select>
+
+</mapper>

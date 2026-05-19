@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.AiChatMessageMapper">
+
+    <!-- 基础ResultMap：映射表字段和实体属性（移除冗余jdbcType配置） -->
+    <resultMap id="AiChatMessageResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiChatMessage">
+        <id column="message_id" property="messageId"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="user_id" property="userId"/>
+        <result column="parent_msg_id" property="parentMsgId"/>
+        <result column="task_id" property="taskId"/>
+        <result column="role" property="role"/>
+        <result column="content" property="content"/>
+        <result column="split_content" property="splitContentJson"/>
+        <result column="is_temp" property="isTemp"/>  <!-- 新增：临时消息字段映射 -->
+        <result column="sort_timestamp" property="sortTimestamp"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- ==================== 新增：查询所有AI聊天消息 ==================== -->
+    <!-- 查询全部消息（无任何过滤，按主键ID正序：最早→最新） -->
+    <select id="selectAll" resultMap="AiChatMessageResultMap">
+        SELECT *
+        FROM ai_chat_message
+        ORDER BY message_id
+    </select>
+
+    <!-- 按会话ID+用户ID查询全部历史消息（正序：最早→最新，基于雪花主键ID保证顺序） -->
+    <select id="selectBySessionId" resultMap="AiChatMessageResultMap">
+        SELECT t.*
+        FROM (
+        -- 子查询：先按主键ID正序获取全部消息（雪花ID小=插入早=最早的消息）
+        SELECT *
+        FROM ai_chat_message
+        WHERE session_id = #{sessionId}
+        AND user_id = #{userId}  <!-- 保留用户ID过滤，防止越权 -->
+        ORDER BY message_id -- 核心：用雪花主键ID保证插入顺序
+        ) t
+        ORDER BY t.message_id
+    </select>
+
+    <!-- 按会话ID+用户ID统计消息数量（走索引，高效） -->
+    <select id="countBySessionIdAndUserId" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM ai_chat_message
+        WHERE session_id = #{sessionId}
+        AND user_id = #{userId}  <!-- 过滤用户，防止越权统计 -->
+    </select>
+
+    <!-- 修正后：按雪花主键ID排序，彻底解决顺序错乱问题 -->
+    <select id="selectLatestMessagesBySessionId" resultMap="AiChatMessageResultMap">
+        SELECT t.*
+        FROM (
+                 -- 子查询：先按主键ID倒序取最新的N条（雪花ID大=插入晚=最新）
+                 SELECT *
+                 FROM ai_chat_message
+                 WHERE session_id = #{sessionId}
+                   AND user_id = #{userId}
+                 ORDER BY message_id DESC
+                 LIMIT #{limitNum}) t
+        -- 外层查询：将这N条数据按主键ID正序排列
+        ORDER BY t.message_id
+    </select>
+
+    <!-- 分页加载：上拉获取更早的历史消息（核心分页SQL） -->
+    <select id="selectMoreHistoryMessages" resultMap="AiChatMessageResultMap">
+        SELECT *
+        FROM ai_chat_message
+        WHERE session_id = #{sessionId}
+          AND user_id = #{userId}
+    <![CDATA[
+          AND message_id < #{minMessageId}
+    ]]>
+    ORDER BY message_id DESC
+        LIMIT #{limitNum}
+    </select>
+
+   <!-- ==================== 插入消息（幂等：新增is_temp、sort_timestamp、task_id字段） ==================== -->
+    <insert id="insertIgnore" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiChatMessage">
+        INSERT IGNORE INTO ai_chat_message
+        (message_id, session_id, parent_msg_id, task_id, user_id, role, content, split_content, is_temp, sort_timestamp)
+        VALUES (
+                   #{messageId},
+                   #{sessionId},
+                   #{parentMsgId},
+                   #{taskId},
+                   #{userId},
+                   #{role},
+                   #{content},
+                   #{splitContentJson},
+                   #{isTemp},
+                   #{sortTimestamp}
+               )
+    </insert>
+
+    <!-- ==================== 新增：AI流式占位消息专用插入 ==================== -->
+    <!-- 用途：预创建AI回复占位记录，强制标记为临时消息(is_temp=1)，时间戳无值则用0 -->
+    <insert id="insertAiStreamPlaceholder" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiChatMessage">
+        INSERT IGNORE INTO ai_chat_message
+        (message_id, session_id, parent_msg_id, task_id, user_id, role, content, split_content, is_temp, sort_timestamp)
+        VALUES (
+        #{messageId},
+        #{sessionId},
+        #{parentMsgId},
+        #{taskId},
+        #{userId},
+        #{role},
+        '[AI_STREAM_PLACEHOLDER]',  <!-- 固定特殊占位符 -->
+        #{splitContentJson},
+        1,  <!-- 核心：强制标记为临时消息 -->
+        IFNULL(#{sortTimestamp}, 0)  <!-- 无传入时间则使用0 -->
+        )
+    </insert>
+
+    <!-- ==================== 动态更新AI流式最终消息（三重条件定位，安全防越权） ==================== -->
+    <update id="updateAiStreamContentById" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.AiChatMessage">
+        UPDATE ai_chat_message
+        <set>
+            <!-- 必更新：替换占位符为真实内容 -->
+            content = #{content},
+            <!-- 必更新：排序时间戳 -->
+            sort_timestamp = #{sortTimestamp},
+            <!-- 自动重置：临时消息更新为最终消息，强制置0 -->
+            is_temp = 0,
+            <!-- 动态更新：仅当splitContentJson不为null/空字符串时才更新 -->
+            <if test="splitContentJson != null and splitContentJson != ''">
+                split_content = #{splitContentJson},
+            </if>
+        </set>
+        <!-- 三重安全校验：只能更新自己会话的自己消息 -->
+        WHERE message_id = #{messageId}
+        AND session_id = #{sessionId}
+        AND user_id = #{userId}
+    </update>
+
+    <!-- 新增1：物理删除消息（按parentMsgId，校验sessionId+userId防越权） -->
+    <delete id="deleteByParentMsgIdAndSessionIdAndUserId">
+        DELETE FROM ai_chat_message
+        WHERE parent_msg_id = #{parentMsgId}
+          AND session_id = #{sessionId}
+          AND user_id = #{userId}
+    </delete>
+
+    <!-- 修正后：查询指定会话+用户下，role=1（用户）的最新一条消息 -->
+    <select id="selectLatestUserMessageBySessionIdAndUserId" resultMap="AiChatMessageResultMap">
+        select *
+        from ai_chat_message
+        where session_id = #{sessionId}
+        and user_id = #{userId}
+        and role = 1  <!-- 仅查询用户消息（role=1） -->
+        order by create_time desc
+        limit 1
+    </select>
+
+    <!-- 新增：按parentMsgId+sessionId+userId查询单条消息（防越权） -->
+    <select id="selectByParentMsgIdAndSessionIdAndUserId" resultMap="AiChatMessageResultMap">
+        select *
+        from ai_chat_message
+        where parent_msg_id = #{parentMsgId}
+          and session_id = #{sessionId}
+          and user_id = #{userId}
+        limit 1
+    </select>
+
+</mapper>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.token.AiUserTokenRecordMapper">
+
+    <!-- 结果映射：适配枚举类型 + 最新累计消耗字段 -->
+    <resultMap id="AiUserTokenRecordMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiUserTokenRecord">
+        <id column="record_id" property="recordId"/>
+        <result column="user_id" property="userId"/>
+        <result column="type_id" property="typeId"/>
+        <result column="change_type" property="changeType"/>
+        <result column="change_amount" property="changeAmount"/>
+        <result column="change_way" property="changeWay"/>
+        <result column="before_consumed" property="beforeConsumed"/>
+        <result column="after_consumed" property="afterConsumed"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 新增流水：手动传入雪花ID，适配最新表字段 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiUserTokenRecord">
+        INSERT INTO ai_user_token_record
+        (record_id, user_id, type_id, change_type, change_amount, change_way, before_consumed, after_consumed, remark, create_time)
+        VALUES
+            (#{recordId}, #{userId}, #{typeId}, #{changeType}, #{changeAmount}, #{changeWay}, #{beforeConsumed}, #{afterConsumed}, #{remark}, NOW())
+    </insert>
+
+    <!-- 根据用户ID查询 -->
+    <select id="selectByUserId" resultMap="AiUserTokenRecordMap">
+        SELECT * FROM ai_user_token_record WHERE user_id = #{userId}
+    </select>
+
+    <!-- 根据用户ID+变动类型查询 -->
+    <select id="selectByUserIdAndType" resultMap="AiUserTokenRecordMap">
+        SELECT * FROM ai_user_token_record
+        WHERE user_id = #{userId} AND change_type = #{changeType}
+    </select>
+
+    <!-- 根据用户ID+变动方式查询 -->
+    <select id="selectByUserIdAndWay" resultMap="AiUserTokenRecordMap">
+        SELECT * FROM ai_user_token_record
+        WHERE user_id = #{userId} AND change_way = #{changeWay}
+    </select>
+
+    <!-- 联合三条件查询 -->
+    <select id="selectByUserIdAndTypeAndWay" resultMap="AiUserTokenRecordMap">
+        SELECT * FROM ai_user_token_record
+        WHERE user_id = #{userId}
+          AND change_type = #{changeType}
+          AND change_way = #{changeWay}
+    </select>
+
+    <!-- 根据用户ID删除 -->
+    <delete id="deleteByUserId">
+        DELETE FROM ai_user_token_record WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

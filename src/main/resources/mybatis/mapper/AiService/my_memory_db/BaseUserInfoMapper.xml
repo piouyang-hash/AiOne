@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.my_memory_db.BaseUserInfoMapper">
+
+    <!-- 通用结果集映射 -->
+    <resultMap id="BaseUserInfoResultMap" type="org.myfx.controls.aione.AiService.entity.my_memory_db.BaseUserInfo">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="call_name" property="callName"/>
+        <result column="online_time_range" property="onlineTimeRange"/>
+        <result column="gender" property="gender"/>
+        <result column="age" property="age"/>
+        <result column="identity" property="identity"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="is_deleted" property="isDeleted"/>
+    </resultMap>
+
+    <!-- 新增用户基本信息（修改后）【修改点2：补充call_name + 新增online_time_range】 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.my_memory_db.BaseUserInfo">
+        INSERT INTO base_user_info (
+        id, user_id, call_name, online_time_range, gender, age, identity
+        )
+        VALUES (
+        #{id}, #{userId}, #{callName}, #{onlineTimeRange}, #{gender}, #{age}, #{identity}
+        )
+        <!-- create_time用数据库默认值，无需手动传；update_time随create_time默认填充 -->
+    </insert>
+
+    <!-- 根据雪花ID删除 -->
+    <delete id="deleteById" parameterType="java.lang.Long">
+        DELETE FROM base_user_info WHERE id = #{id}
+    </delete>
+
+    <!-- 1. 逻辑删除用户基本信息（注销/业务终止场景，SAGA正向操作） -->
+    <update id="updateLogicalDeleteByUserId">
+        UPDATE base_user_info
+        SET is_deleted = 1,
+        update_time = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+        AND is_deleted = 0 <!-- 仅更新未删除的记录，保证幂等 -->
+    </update>
+
+    <!-- 2. 逻辑复原用户基本信息（注销失败补偿场景，SAGA反向操作） -->
+    <update id="updateLogicalRecoverByUserId">
+        UPDATE base_user_info
+        SET is_deleted = 0,
+        update_time = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+        AND is_deleted = 1 <!-- 仅复原已删除的记录，保证幂等 -->
+    </update>
+
+    <!-- 3. 物理删除用户基本信息（注册失败补偿场景，SAGA反向操作） -->
+    <delete id="physicalDeleteByUserId">
+        DELETE FROM base_user_info
+        WHERE user_id = #{userId}
+        AND create_time > DATE_SUB(NOW(), INTERVAL 5 MINUTE) <!-- 仅删除5分钟内创建的新记录，避免误删 -->
+    </delete>
+
+    <!-- 根据用户ID动态更新【修改点3：新增onlineTimeRange的动态更新】 -->
+    <update id="updateByUserId" parameterType="org.myfx.controls.aione.AiService.entity.my_memory_db.BaseUserInfo">
+        UPDATE base_user_info
+        <!-- trim标签：prefix指定前缀，suffixOverrides去掉最后一个多余的逗号 -->
+        <trim prefix="SET" suffixOverrides=",">
+            <!-- 动态判断：字段非null才更新 -->
+            <if test="gender != null">gender = #{gender},</if>
+            <!-- 新增：AI称呼字段，非null则更新 -->
+            <if test="callName != null">call_name = #{callName},</if>
+            <!-- 新增：在线时间段字段，非null则更新 -->
+            <if test="onlineTimeRange != null">online_time_range = #{onlineTimeRange},</if>
+            <if test="age != null">age = #{age},</if>
+            <if test="identity != null">identity = #{identity},</if>
+            <!-- 无论是否更新其他字段，都更新update_time -->
+            update_time = NOW()
+        </trim>
+        <!-- 更新条件：用户ID（唯一索引） -->
+        WHERE user_id = #{userId}
+    </update>
+
+    <!-- 根据雪花ID查询【修改点4：补充call_name + online_time_range + is_deleted字段】 -->
+    <select id="selectById" parameterType="java.lang.Long" resultMap="BaseUserInfoResultMap">
+        SELECT
+            id, user_id, call_name, online_time_range, gender, age, identity,
+            create_time, update_time, is_deleted
+        FROM base_user_info
+        WHERE id = #{id}
+    </select>
+
+    <!-- 1. 查询【未逻辑删除】的用户信息（通用业务查询专用）【字段已完整，无需改】 -->
+    <select id="selectNotDeletedByUserId" parameterType="java.lang.Integer" resultMap="BaseUserInfoResultMap">
+        SELECT id, user_id, call_name, online_time_range, gender, age, identity, create_time, update_time, is_deleted
+        FROM base_user_info
+        WHERE user_id = #{userId}
+        AND is_deleted = 0 <!-- 强制过滤已删除记录 -->
+    </select>
+
+    <!-- 2. 查询【所有】用户信息（含已逻辑删除，仅SAGA补偿/特殊校验用）【字段已完整，无需改】 -->
+    <select id="selectByUserIdWithDeleted" parameterType="java.lang.Integer" resultMap="BaseUserInfoResultMap">
+        SELECT id, user_id, call_name, online_time_range, gender, age, identity, create_time, update_time, is_deleted
+        FROM base_user_info
+        WHERE user_id = #{userId}
+        <!-- 无 is_deleted 条件，查全部 -->
+    </select>
+
+</mapper>
