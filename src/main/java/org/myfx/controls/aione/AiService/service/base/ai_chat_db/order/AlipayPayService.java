@@ -15,4 +15,13 @@ public interface AlipayPayService {
      * @throws AlipayApiException 支付宝接口异常
      */
     String generatePayForm(AlipayPayDTO payDTO) throws AlipayApiException;
+
+    /**
+     * 生成支付宝手机H5端支付表单HTML
+     * @param payDTO 支付参数
+     * @return 支付宝返回的自动提交表单
+     * @throws AlipayApiException 支付宝接口异常
+     */
+    String generateWapPayForm(AlipayPayDTO payDTO) throws AlipayApiException;
+
 }

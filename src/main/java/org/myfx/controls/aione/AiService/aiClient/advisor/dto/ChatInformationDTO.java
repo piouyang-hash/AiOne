@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -22,6 +23,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "聊天信息核心传输DTO（全Advisor链路共享）")
+@Slf4j
 public class ChatInformationDTO {
 
     /**
@@ -143,6 +145,13 @@ public class ChatInformationDTO {
         }
         Object dtoObj = context.get(CHAT_INFORMATION_DTO_KEY);
         return dtoObj instanceof ChatInformationDTO dto ? dto : null;
+    }
+
+    // ==================== 核心改造：带日志的 setter ====================
+    public void setAiReplyContent(String aiReplyContent) {
+        // 每次调用 set 必打印！看清赋值内容
+        log.info("【⚠️ AI回复内容被赋值】setAiReplyContent = 【{}】", aiReplyContent);
+        this.aiReplyContent = aiReplyContent;
     }
 
     /**

@@ -179,8 +179,8 @@ public class ChatTaskServiceImpl implements ChatTaskService {
      * 响应式队列执行（锁持有到整个队列执行完毕才释放）
      */
     private Mono<Void> executeChatQueueReactive(Integer userId, String sessionUuid) {
-        String lockKey = "lock:ai:chat:queue:" + userId + ":" + sessionUuid;
-        String userSessionKey = userId + ":" + sessionUuid;
+        String lockKey = STR."lock:ai:chat:queue:\{userId}:\{sessionUuid}";
+        String userSessionKey = STR."\{userId}:\{sessionUuid}";
         RLockReactive lock = redissonReactiveClient.getLock(lockKey);
 
         // 基础初始化日志

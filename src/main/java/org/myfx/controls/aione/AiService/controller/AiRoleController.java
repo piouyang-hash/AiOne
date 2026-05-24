@@ -1,6 +1,5 @@
 package org.myfx.controls.aione.AiService.controller;
 
-import cn.hutool.core.bean.BeanUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

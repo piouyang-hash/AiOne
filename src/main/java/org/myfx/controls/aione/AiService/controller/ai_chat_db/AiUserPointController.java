@@ -106,37 +106,4 @@ public class AiUserPointController {
         return AppResponse.success(vo, "积分余额查询成功");
     }
 
-    // ====================== 【新增】查询可用充值档位接口 ======================
-    /**
-     * 查询系统支持的积分充值档位
-     */
-    @Operation(
-            summary = "查询积分充值档位",
-            description = """
-                查询系统预设的所有积分充值金额档位：
-                1. 登录态接口，需携带有效的JWT Token；
-                2. 无请求参数，直接返回所有可用档位；
-                3. 接口1分钟内最多调用20次，防止高频查询；
-                4. 返回包含金额、描述的充值档位列表。
-                """,
-            security = @SecurityRequirement(name = "bearerAuth")
-    )
-    @GetMapping("/recharge/tiers")
-    @CheckJwt
-    @RateLimit(seconds = 60, maxCount = 20)
-    @SwaggerResponseConstants.Api500
-    @SwaggerResponseConstants.Api400
-    @SwaggerResponseConstants.Api401
-    public AppResponse<List<PointRechargeTierVO>> getRechargeTiers() {
-        // 1. 获取所有枚举
-        List<PointRechargeTierEnum> tierList = Arrays.asList(PointRechargeTierEnum.values());
-
-        // 2. 枚举 转 VO（核心优化）
-        List<PointRechargeTierVO> voList = tierList.stream()
-                .map(tier -> new PointRechargeTierVO(tier.getAmount(), tier.getDesc()))
-                .toList();
-
-        // 3. 返回干净的VO列表
-        return AppResponse.success(voList, "充值档位查询成功");
-    }
 }

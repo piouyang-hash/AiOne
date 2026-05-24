@@ -1,6 +1,8 @@
 package org.myfx.controls.aione.AiService.aiClient.advisor;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.myfx.controls.aione.AiService.aiClient.advisor.dto.ChatInformationDTO;
 import org.myfx.controls.aione.AiService.utils.TextSplitterUtils;
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -18,7 +20,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-
 /**
  * 智能文本切分Advisor（MySmartSplitterAdvisor）
  * <p>
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * order（执行顺序，值越小执行越早）：60（该Advisor的before执行较晚，输出会较早执行，处理ai的回复，确保上游基础逻辑（如统计token）完成后再做文本切分）
  */
 @Slf4j
+@NullMarked
 public class MySmartSplitterAdvisor implements BaseAdvisor {
 
     private final int minLength;
@@ -44,8 +46,7 @@ public class MySmartSplitterAdvisor implements BaseAdvisor {
     // 为了简单且保留 Context，我们通常会在原始流上用 zip 或 switchMap，
     // 但最简单的办法是在 splitStream 时把对象一起带进去。
     @Override
-    @NonNull
-    public Flux<ChatClientResponse> adviseStream(@NonNull ChatClientRequest request, @NonNull StreamAdvisorChain chain) {
+    public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
         // 一行获取DTO + 强制非空校验
         ChatInformationDTO chatInfoDTO = ChatInformationDTO.getFromContext(request.context());
         Assert.notNull(chatInfoDTO, "ChatInformationDTO 不能为空");
@@ -86,12 +87,11 @@ public class MySmartSplitterAdvisor implements BaseAdvisor {
                     allSentencesWithTime.add(sentenceWithTime);
 
                     // 同步到DTO（不变）
-                    chatInfoDTO.setAiReplyContent(sentence);
+                    chatInfoDTO.setAiReplyContent(rawBuffer.toString());
 
                     // 生成带时间戳的JSON
                     String json = TextSplitterUtils.generateJsonFromList(allSentencesWithTime);
-                    log.info("[{}] 【JSON生成】带时间戳完整列表 | 列表大小: {} | JSON: {}",
-                            traceId, allSentencesWithTime.size(), json);
+
                     chatInfoDTO.setSplitContentJson(json);
 
                     if (stopState.get() == 1) {
@@ -114,16 +114,13 @@ public class MySmartSplitterAdvisor implements BaseAdvisor {
      * 【适配修改】支持带时间戳的分段数据，兼容正常终止/用户取消中断
      */
     private void handleFinalStorage(ChatClientRequest request, ChatInformationDTO chatInfoDTO,
-                                    // 【关键修改】替换为带时间戳的列表
                                     List<Map<String, Object>> allSentencesWithTime,
                                     StringBuilder rawBuffer,
                                     SignalType signalType, String traceId) {
 
         // 【中断兜底】用户取消 + 句子列表为空 + 原始缓冲区有数据 → 补全最后一段（带时间戳）
         if (signalType == SignalType.CANCEL && allSentencesWithTime.isEmpty() && !rawBuffer.isEmpty()) {
-            // 清理文本
             String cleanContent = TextSplitterUtils.cleanSingleSentence(rawBuffer.toString());
-            // 绑定兜底文本的时间戳（中断时的实时时间）
             Map<String, Object> sentenceWithTime = new HashMap<>();
             sentenceWithTime.put("content", cleanContent);
             sentenceWithTime.put("timestamp", System.currentTimeMillis());
@@ -132,14 +129,10 @@ public class MySmartSplitterAdvisor implements BaseAdvisor {
 
         // 【修改】判断带时间戳的列表是否为空
         if (!allSentencesWithTime.isEmpty()) {
-            // 【关键修改】调用新版工具方法，生成带时间戳的JSON
             String json = TextSplitterUtils.generateJsonFromList(allSentencesWithTime);
-            // 最终切分JSON（带时间戳）存入DTO
             chatInfoDTO.setSplitContentJson(json);
-            // 最终原文存入DTO（不变）
             chatInfoDTO.setAiReplyContent(rawBuffer.toString());
 
-            log.info("[{}] 最终收割完成. 信号: {}, 句子数: {}", traceId, signalType, allSentencesWithTime.size());
         }
     }
 
@@ -156,7 +149,6 @@ public class MySmartSplitterAdvisor implements BaseAdvisor {
     }
 
     @Override
-    @NonNull
     public String getName() { return "MySmartSplitterAdvisor"; }
 
     @Override

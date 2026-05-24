@@ -1,7 +1,9 @@
-package org.myfx.controls.aione.UserService.common.exception;
+package org.myfx.controls.aione.ServiceCommon.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.myfx.controls.aione.AiService.common.exception.TokenInsufficientException;
 import org.myfx.controls.aione.ServiceCommon.AppResponse;
+import org.myfx.controls.aione.UserService.common.exception.*;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -152,6 +154,16 @@ public class GlobalExceptionHandler {
         return AppResponse.error(403, e.getMessage(), null);
     }
 
+    // ==================== 新增：积分不足异常处理器 ====================
+    @ExceptionHandler(TokenInsufficientException.class)
+    @ResponseStatus(HttpStatus.PAYMENT_REQUIRED) // 402 积分/余额不足
+    public AppResponse<Void> handleTokenInsufficientException(TokenInsufficientException e) {
+        // 记录业务异常日志
+        log.error("Token积分不足异常：{}", e.getMessage());
+        // 返回标准错误响应
+        return AppResponse.error(HttpStatus.PAYMENT_REQUIRED.value(), e.getMessage(), null);
+    }
+
     /**
      * 兜底异常处理：显示详细异常信息（方便开发排查）
      * - 记录完整异常堆栈到 error 日志（方便查错）
@@ -175,4 +187,22 @@ public class GlobalExceptionHandler {
         // 返回 500 错误
         return AppResponse.error(500, detailMsg, null);
     }
+
+    @ExceptionHandler(org.myfx.controls.aione.ServiceCommon.exception.AuthException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public AppResponse<?> handleAuthException(AuthException e) {
+        // 机器可读错误码（直接使用枚举名）
+        String errorCode = e.getAuthError() == null ? "AUTH_ERROR" : e.getAuthError().name();
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("errorCode", errorCode);
+        payload.put("detail", e.getMessage()); // 供前端调试/日志用（展示请谨慎）
+
+        // 记录日志：warn 级别，包含错误码，便于排查（生产可改为 error 级别）
+        log.warn("AuthException: {} - {} - errorCode={}", e.getClass().getSimpleName(), e.getMessage(), errorCode);
+
+        // 返回统一格式：HTTP 401 + ApiResponse.code 401，message 为用户可见文案，data 带机器码
+        return AppResponse.error(401, e.getMessage(), payload);
+    }
+
 }

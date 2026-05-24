@@ -19,7 +19,7 @@ public enum PayStatusEnum implements Serializable {
     /**
      * 等待付款（待支付）（恢复为原code=1）
      */
-    WAIT_PAY(1, "等待付款"),
+    WAIT_PAY(1, "待付款"),
 
     /**
      * Try阶段已冻结（新增：TCC Try成功，金额已冻结，待系统确认进入付款环节）（顺延为2）
@@ -34,17 +34,22 @@ public enum PayStatusEnum implements Serializable {
     /**
      * 订单超时（待支付状态下超时未付款）（原code=3 → 顺延为4）
      */
-    ORDER_TIMEOUT(4, "订单超时"),
+    ORDER_TIMEOUT(4, "已超时"),
 
     /**
-     * 付款失败（支付渠道返回失败）（原code=4 → 顺延为5）
+     * 订单已取消（用户主动取消）
      */
-    PAY_FAIL(5, "付款失败"),
+    CANCELLED(5, "已取消"),
 
     /**
-     * 付款错误（服务器异常/事务回滚导致的失败）（原code=5 → 顺延为6）
+     * 付款失败（支付渠道返回失败）【序号顺延为6】
      */
-    PAY_ERROR(6, "付款错误");
+    PAY_FAIL(6, "付款失败"),
+
+    /**
+     * 付款错误（服务器异常/事务回滚导致的失败）【序号顺延为7】
+     */
+    PAY_ERROR(7, "付款错误");
 
     /**
      * 序列化版本号（避免序列化异常）

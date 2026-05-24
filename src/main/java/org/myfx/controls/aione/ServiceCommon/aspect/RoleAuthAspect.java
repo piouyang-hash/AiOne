@@ -22,7 +22,7 @@ import java.util.Objects;
 @Slf4j
 @Aspect
 @Component
-@Order(4)
+@Order(5)
 public class RoleAuthAspect {
 
     // 切入点：拦截所有标记了@RequireRole的类或方法（逻辑不变）
@@ -93,7 +93,7 @@ public class RoleAuthAspect {
     private String getRoleDescList(List<RoleEnum> roleList) {
         return roleList.stream()
                 .map(RoleEnum::getDesc)
-                .reduce((a, b) -> a + "、" + b)
+                .reduce((a, b) -> STR."\{a}、\{b}")
                 .orElse("");
     }
 }

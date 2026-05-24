@@ -1,0 +1,2 @@
+历史对话（按时间顺序，最新的在下面）：
+{historyMessagesFormatted}

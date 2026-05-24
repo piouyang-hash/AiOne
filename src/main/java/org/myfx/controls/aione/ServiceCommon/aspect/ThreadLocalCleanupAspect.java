@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Aspect
-@Order(0) // 最先执行的切面
+@Order(1) // 最先执行的切面
 public class ThreadLocalCleanupAspect {
 
     /**

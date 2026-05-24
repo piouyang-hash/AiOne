@@ -92,7 +92,7 @@ public class RequestContext {
      */
     public static String getToken() {
         // 1. 从当前请求头获取Authorization请求头
-        String authorizationHeader = getHeader("authorization");
+        String authorizationHeader = getHeader("Authorization");
 
         // 2. 校验请求头是否存在，不存在则抛出认证异常
         if (authorizationHeader == null) {

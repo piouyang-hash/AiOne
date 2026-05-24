@@ -46,6 +46,17 @@ public interface AiRechargeOrderMapper {
     );
 
     /**
+     * 根据用户ID + 订单状态 查询充值订单列表
+     * @param userId 用户ID
+     * @param status 订单状态枚举
+     * @return 订单列表
+     */
+    List<AiRechargeOrder> selectByUserIdAndStatus(
+            @Param("userId") Integer userId,
+            @Param("status") PayStatusEnum status
+    );
+
+    /**
      * 根据ID更新AI积分充值订单状态（核心更新方法）
      * @param aiRechargeOrder 充值订单实体（至少包含id、status）
      * @return 影响行数

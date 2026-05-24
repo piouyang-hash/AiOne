@@ -7,21 +7,23 @@ import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradeQueryRequest;
 import com.alipay.api.response.AlipayTradeQueryResponse;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.myfx.controls.aione.AiService.config.AlipayConfig;
 import org.myfx.controls.aione.AiService.dto.order.AlipayPayDTO;
+import org.myfx.controls.aione.AiService.entity.ai_chat_db.order.AiRechargeGoods;
+import org.myfx.controls.aione.AiService.entity.ai_chat_db.order.AiRechargeOrder;
+import org.myfx.controls.aione.AiService.service.base.ai_chat_db.order.AiRechargeGoodsService;
+import org.myfx.controls.aione.AiService.service.base.ai_chat_db.order.AiRechargeOrderService;
+import org.myfx.controls.aione.AiService.service.base.ai_chat_db.order.AlipayCallbackService;
 import org.myfx.controls.aione.AiService.service.base.ai_chat_db.order.AlipayPayService;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/alipay")
@@ -31,6 +33,13 @@ public class AlipayController {
     // 【关键】注入Spring容器中的AlipayClient Bean（推荐构造器注入，Spring官方最佳实践）
     private final AlipayClient alipayClient;
     private final AlipayPayService alipayPayService;
+
+    private final AiRechargeOrderService aiRechargeOrderService;
+    // 注入充值商品服务
+    private final AiRechargeGoodsService aiRechargeGoodsService;
+
+    // 注入支付宝回调事务服务
+    private final AlipayCallbackService alipayCallbackService;
 
     // 浏览器直接访问：http://localhost:8080/alipay/pay?orderId=123456
     /**
@@ -51,86 +60,118 @@ public class AlipayController {
     @RateLimit(seconds = 60, maxCount = 20) // 限流：1分钟最多20次
     public void payTest(HttpServletResponse response,
                         @RequestParam Long orderId) throws AlipayApiException, IOException {
-        // 打印参数
-        System.out.println("接收到的业务订单ID：" + orderId);
 
-        // 1. 构建支付参数
+        // ===================== 核心修改：查询业务数据 =====================
+        // 1. 根据订单ID查询充值订单
+        AiRechargeOrder rechargeOrder = aiRechargeOrderService.getRechargeOrderById(orderId);
+        if (rechargeOrder == null) {
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().write("订单不存在，orderId：" + orderId);
+            return;
+        }
+
+        // 2. 从订单中获取商品ID，查询商品信息
+        Long goodsId = rechargeOrder.getGoodsId();
+        AiRechargeGoods rechargeGoods = aiRechargeGoodsService.getRechargeGoodsById(goodsId);
+        if (rechargeGoods == null) {
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().write("商品不存在，goodsId：" + goodsId);
+            return;
+        }
+        // =================================================================
+
+        // 3. 构建支付参数（全部使用业务数据库真实数据）
         AlipayPayDTO payDTO = new AlipayPayDTO();
-        payDTO.setOutTradeNo(UUID.randomUUID().toString().replace("-", ""));
-        payDTO.setSubject("Vue-APP支付自定义内容测试");
-        payDTO.setTotalAmount(new BigDecimal("0.01"));
-        payDTO.setBody("这是商品的详细描述信息");
+        // ✅ 商户订单号 = 传入的业务订单ID（核心需求）
+        payDTO.setOutTradeNo(String.valueOf(orderId));
+        // ✅ 订单标题 = 商品名称
+        payDTO.setSubject(rechargeGoods.getName());
+        // ✅ 支付金额 = 商品金额
+        payDTO.setTotalAmount(rechargeGoods.getAmount());
 
-        System.out.println("生成支付宝商户订单号：" + payDTO.getOutTradeNo());
+        // 4. 调用Service生成支付表单
+        String payForm = alipayPayService.generateWapPayForm(payDTO);
 
-        // 2. 调用Service生成支付表单
-        String payForm = alipayPayService.generatePayForm(payDTO);
-
-        // 3. 输出HTML表单到浏览器（自动跳转支付）
+        // 5. 输出HTML表单到浏览器（自动跳转支付）
         response.setContentType("text/html;charset=UTF-8");
         response.getWriter().write(payForm);
     }
 
-
     @PostMapping("/notify")
     public String alipayNotify(HttpServletRequest request) {
-        System.out.println("========== 收到支付宝异步通知 ==========");
-
         try {
-            // 1. 把支付宝传来的所有参数 转成 Map（验签必需）
+            // 1. 转换支付宝回调参数
             Map<String, String> params = new HashMap<>();
             Map<String, String[]> requestParams = request.getParameterMap();
             for (String key : requestParams.keySet()) {
                 String[] values = requestParams.get(key);
-                String valueStr = "";
+                StringBuilder valueStr = new StringBuilder();
                 for (int i = 0; i < values.length; i++) {
-                    valueStr = (i == values.length - 1) ? valueStr + values[i] : valueStr + values[i] + ",";
+                    valueStr.append(values[i]);
+                    if (i != values.length - 1) {
+                        valueStr.append(",");
+                    }
                 }
-                params.put(key, valueStr);
+                params.put(key, valueStr.toString());
             }
 
-            // 打印所有参数
-            System.out.println(params);
+            System.out.println("支付宝回调参数：" + params);
 
-            // ==================== 核心：验签代码 ====================
+            // 2. 验签
             boolean signVerified = AlipaySignature.rsaCheckV1(
-                    params,                     // 支付宝传来的所有参数
-                    AlipayConfig.ALIPAY_PUBLIC_KEY,  // 你的支付宝公钥
-                    AlipayConfig.CHARSET,            // 编码 UTF-8
-                    AlipayConfig.SIGN_TYPE           // 签名类型 RSA2
+                    params,
+                    AlipayConfig.ALIPAY_PUBLIC_KEY,
+                    AlipayConfig.CHARSET,
+                    AlipayConfig.SIGN_TYPE
             );
 
-            // 2. 判断验签结果
-            if (signVerified) {
-                System.out.println("✅ 验签通过：确认为支付宝官方发送！");
-
-                // 3. 验签通过后，再判断支付是否成功
-                String tradeStatus = params.get("trade_status");
-                if ("TRADE_SUCCESS".equals(tradeStatus)) {
-                    System.out.println("✅ 支付成功！订单号：" + params.get("out_trade_no"));
-                    // TODO 这里可以写业务代码：修改数据库订单状态为已支付
-                }
-
-                // 必须返回 success，支付宝才会停止推送
-                return "success";
-
-            } else {
-                // 验签失败：伪造请求！
-                System.out.println("❌ 验签失败：该请求为伪造，拒绝处理！");
+            if (!signVerified) {
+                System.out.println("❌ 验签失败");
                 return "fail";
             }
 
+            System.out.println("✅ 验签通过");
+            String tradeStatus = params.get("trade_status");
+            if ("TRADE_SUCCESS".equals(tradeStatus)) {
+                // 3. 核心：调用事务业务类处理
+                Long orderId = Long.parseLong(params.get("out_trade_no"));
+                alipayCallbackService.rechargeCallback(orderId);
+                System.out.println("✅ 订单支付+积分增加 全部完成！订单号：" + orderId);
+            }
+
+            // 必须返回success
+            return "success";
+
         } catch (Exception e) {
             e.printStackTrace();
+            // 抛出异常 → 事务回滚
             return "fail";
+        }
+    }
+
+    // ===================== 【核心：本地测试接口】 =====================
+    // 用途：手动传入 orderId，直接执行 订单支付 + 积分增加 逻辑
+    // 访问地址示例：http://localhost:8080/alipay/test/recharge?orderId=2057459579284881408
+    @GetMapping("/test/recharge")
+    public String testRechargeCallback(@RequestParam("orderId") Long orderId) {
+        try {
+            System.out.println("【本地测试】开始处理订单：" + orderId);
+
+            // 🔥 直接调用你原本的核心业务方法（和支付宝回调里的逻辑一模一样）
+            alipayCallbackService.rechargeCallback(orderId);
+
+            System.out.println("【本地测试】✅ 订单支付+积分增加 全部完成！订单号：" + orderId);
+            return "测试成功：订单 " + orderId + " 处理完成！";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "测试失败：" + e.getMessage();
         }
     }
 
     // 🔥 新增：手动查询订单接口（GET请求，浏览器直接访问测试）
     @GetMapping("/query")
     public String queryOrder(String outTradeNo) throws AlipayApiException {
-        System.out.println("========== 手动查询订单：" + outTradeNo + " ==========");
-
         // 1. 创建请求 + 模型对象（和官方Demo完全一致）
         AlipayTradeQueryRequest request = new AlipayTradeQueryRequest();
         AlipayTradeQueryModel model = new AlipayTradeQueryModel();
@@ -168,9 +209,4 @@ public class AlipayController {
         }
     }
 
-    // ================== 公网测试接口（新加的） ==================
-    @GetMapping("/test")
-    public String testNgrok() {
-        return "✅ 公网访问成功！ngrok 穿透正常！";
-    }
 }

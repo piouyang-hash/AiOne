@@ -1,0 +1,11 @@
+最近对话摘要（用于保持上下文连贯）：
+{historySummary}
+
+历史对话（按时间顺序，最新的在下面）：
+{historyMessagesFormatted}
+
+人物设定：
+{persona}
+
+当前ASSISTANT正在做的的事件：
+{currentExecutingEvent}

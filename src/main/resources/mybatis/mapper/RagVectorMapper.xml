@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- 严格对应你的Mapper接口全类名 -->
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.RagVectorMapper">
+
+    <!-- 自定义ResultMap：映射数据库字段 ↔ 实体类属性 -->
+    <resultMap id="RagVectorResultMap" type="org.myfx.controls.aione.AiService.entity.RagVector">
+        <!-- 主键映射 -->
+        <id column="id" property="id"/>
+        <!-- 新增：原文映射 -->
+        <result column="content" property="content"/>
+        <!-- 普通字段映射 -->
+        <result column="vector" property="vector"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <!-- 插入向量：新增content字段 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.RagVector">
+        INSERT INTO rag_vector (content, vector)
+        VALUES (#{content}, #{vector})
+    </insert>
+
+    <!-- 根据ID查询向量：增加content查询 -->
+    <select id="selectById" resultMap="RagVectorResultMap">
+        SELECT id, content, vector, create_time
+        FROM rag_vector
+        WHERE id = #{id}
+    </select>
+
+    <!-- 查询所有向量：增加content查询 -->
+    <select id="selectAll" resultMap="RagVectorResultMap">
+        SELECT id, content, vector, create_time
+        FROM rag_vector
+    </select>
+
+</mapper>

@@ -51,7 +51,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         int maxCount = rateLimit.maxCount();
 
         // 6. 生成Redis的key（完全依赖RequestContext的信息）
-        String redisKey = "rateLimit:" + ip + ":" + methodName;
+        String redisKey = STR."rateLimit:\{ip}:\{methodName}";
 
         // 7. 计数+1，判断是否超过限制（逻辑不变）
         Long count = stringRedisTemplate.opsForValue().increment(redisKey);
@@ -61,12 +61,10 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
         if (count != null && count > maxCount) {
             response.setContentType("text/plain;charset=UTF-8");
-            response.getWriter().write("访问太频繁！" + seconds + "秒内最多访问" + maxCount + "次～");
+            response.getWriter().write(STR."访问太频繁！\{seconds}秒内最多访问\{maxCount}次～");
             return false;
         }
 
-        // 8. 没超限制，放行
-        System.out.println(ip + "访问" + methodName + "，" + seconds + "秒内第" + count + "次");
         return true;
     }
 }

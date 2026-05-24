@@ -15,18 +15,11 @@ import java.math.BigDecimal;
 public class AiRechargeOrderCreateDTO {  // 已改名：更符合业务命名规范
 
     @Schema(
-            description = "充值金额（元），必须大于0，保留两位小数",
-            example = "100.00",
-            requiredMode = Schema.RequiredMode.REQUIRED // 标记为必填
+            description = "充值商品ID（雪花ID）",
+            example = "1000000000000000001",
+            requiredMode = Schema.RequiredMode.REQUIRED
     )
-    @NotNull(message = "充值金额不能为空") // 非空校验
-    @DecimalMin(value = "0.01", message = "充值金额必须大于0") // 金额最小0.01元
-    private BigDecimal amount;
+    @NotNull(message = "充值商品ID不能为空")
+    private Long goodsId;
 
-    @Schema(
-            description = "充值备注（可选），比如“充值买书”",
-            example = "充值购买电子书",
-            requiredMode = Schema.RequiredMode.NOT_REQUIRED // 非必填
-    )
-    private String remark; // 前端可选填，后端自动过滤敏感字符后入库
 }

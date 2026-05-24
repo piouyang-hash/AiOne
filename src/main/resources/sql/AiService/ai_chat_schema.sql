@@ -379,12 +379,13 @@ CREATE TABLE IF NOT EXISTS `ai_user_token_record`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT = 'AI微服务-用户Token流水表（消耗审计对账）';
 
--- ====================== AI用户统一算力积分表（极简版） ======================
+-- ====================== AI用户统一算力积分表（极简版+乐观锁） ======================
 CREATE TABLE IF NOT EXISTS `ai_user_point_balance`
 (
     `id`            bigint      NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `user_id`       int         NOT NULL COMMENT '用户ID',
     `total_point`   bigint      NOT NULL DEFAULT 0 COMMENT '总可用算力积分（唯一可消耗余额）',
+    `version`       bigint      NOT NULL DEFAULT 0 COMMENT '乐观锁版本号', -- 新增乐观锁
     `create_time`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
@@ -449,22 +450,37 @@ CREATE TABLE IF NOT EXISTS `ai_chat_keyword`
 # DROP TABLE base_user_behavior;
 # DROP TABLE user_feature_score;
 
+-- 创建 AI 积分充值商品表
+CREATE TABLE IF NOT EXISTS ai_recharge_goods
+(
+    id          BIGINT PRIMARY KEY COMMENT '雪花ID主键（非自增，业务层生成）',
+    amount      DECIMAL(16, 2) NOT NULL COMMENT '充值金额（元）',
+    point       BIGINT         NOT NULL COMMENT '充值到账的AI积分',
+    name        VARCHAR(64)    NOT NULL COMMENT '充值档位名称',
+    description VARCHAR(255)            DEFAULT NULL COMMENT '商品描述（可为空）',
+    status      TINYINT        NOT NULL DEFAULT 1 COMMENT '状态：1-启用 0-禁用',
+    create_time DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    remark      VARCHAR(255)            DEFAULT '' COMMENT '备注说明'
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT ='AI积分充值商品档位表';
 
 CREATE TABLE IF NOT EXISTS ai_recharge_order
 (
     id            BIGINT PRIMARY KEY COMMENT '雪花ID（充值订单ID）',
     user_id       INTEGER        NOT NULL COMMENT '充值用户ID',
-    amount        DECIMAL(16, 2) NOT NULL COMMENT '充值金额（元）',
-    point         BIGINT         NOT NULL COMMENT '充值到账的AI积分', -- 🔥 改为BIGINT 对应Java Long
+    goods_id      BIGINT         NOT NULL COMMENT '关联充值商品ID（ai_recharge_goods.id）',
     business_type TINYINT        NOT NULL COMMENT '1-充值',
     pay_type      TINYINT        NULL COMMENT '1-微信 2-支付宝',
-    status        TINYINT        NOT NULL COMMENT '0-待支付 1-支付成功 2-支付失败 3-过期',
+    status        TINYINT        NOT NULL COMMENT '订单状态 1-待支付 3-支付成功 5-付款失败 4-已超时 5-已取消',
     create_time   DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     pay_time      DATETIME       NULL COMMENT '支付完成时间',
     remark        VARCHAR(255)   NULL COMMENT '充值备注',
+    -- 索引优化
     INDEX idx_user_id (user_id),
+    INDEX idx_goods_id (goods_id),
     INDEX idx_create_time (create_time),
     INDEX idx_status (status)
 ) ENGINE = InnoDB
-  DEFAULT CHARSET = utf8mb4 COMMENT 'AI聊天积分充值订单表';
+  DEFAULT CHARSET = utf8mb4 COMMENT '【过渡新表】AI聊天积分充值订单表';

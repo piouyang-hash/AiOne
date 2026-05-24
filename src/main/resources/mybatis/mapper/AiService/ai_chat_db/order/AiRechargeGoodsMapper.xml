@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.myfx.controls.aione.AiService.mapper.ai_chat_db.order.AiRechargeGoodsMapper">
+
+    <!-- 商品表 ResultMap：数据库字段 → 实体类驼峰映射 -->
+    <resultMap id="AiRechargeGoodsResultMap" type="org.myfx.controls.aione.AiService.entity.ai_chat_db.order.AiRechargeGoods">
+        <id column="id" property="id"/>
+        <result column="amount" property="amount"/>
+        <result column="point" property="point"/>
+        <result column="name" property="name"/>
+        <result column="description" property="description"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="remark" property="remark"/>
+    </resultMap>
+
+    <!-- 1. 插入充值商品 -->
+    <insert id="insert" parameterType="org.myfx.controls.aione.AiService.entity.ai_chat_db.order.AiRechargeGoods">
+        INSERT INTO ai_recharge_goods (id, amount, point, name, description, status, remark)
+        VALUES (#{id}, #{amount}, #{point}, #{name}, #{description}, #{status}, #{remark})
+    </insert>
+
+    <!-- 2. 根据ID查询商品（使用*） -->
+    <select id="selectById" resultMap="AiRechargeGoodsResultMap" parameterType="java.lang.Long">
+        SELECT * FROM ai_recharge_goods
+        WHERE id = #{id}
+    </select>
+
+    <!-- 3. 查询所有商品（使用*，按金额升序排序） -->
+    <select id="selectAll" resultMap="AiRechargeGoodsResultMap">
+        SELECT *
+        FROM ai_recharge_goods
+        ORDER BY amount
+    </select>
+
+</mapper>

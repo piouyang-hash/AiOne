@@ -29,7 +29,7 @@ import java.util.Date;
 @Aspect
 @Component
 @RequiredArgsConstructor
-@Order(1)
+@Order(2)
 public class JwtCheckAspect {
 
     private final JwtTokenUtil jwtTokenUtil;

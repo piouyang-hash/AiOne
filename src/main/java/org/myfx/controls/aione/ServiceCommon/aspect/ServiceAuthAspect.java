@@ -14,7 +14,7 @@ import java.util.List;
 
 @Aspect  // 标记为切面
 @Component  // 交给Spring管理
-@Order(3)  // 切面执行顺序（值越小越先执行，这里按你的要求设为3）
+@Order(4)  // 切面执行顺序（值越小越先执行，这里按你的要求设为3）
 public class ServiceAuthAspect {
 
     // 切入点：拦截所有标记了@ServiceAuth的类或方法

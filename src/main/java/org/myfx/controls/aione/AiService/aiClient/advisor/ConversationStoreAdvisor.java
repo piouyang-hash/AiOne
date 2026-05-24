@@ -42,7 +42,6 @@ public class ConversationStoreAdvisor implements BaseAdvisor {
 
         // 2. 执行【前置存储】：保存用户消息 + 创建AI流式占位符
         chatMessageStoreService.saveUserMessageAndCreateAiPlaceholder(chatInfoDTO);
-        log.info("【ConversationStoreAdvisor】前置存储完成：用户消息已保存，AI占位符创建成功");
 
         return chatClientRequest;
     }
@@ -84,7 +83,7 @@ public class ConversationStoreAdvisor implements BaseAdvisor {
                         log.info("【流式模式】AI开始回复时间戳已记录：{}", startTime);
                     }
 
-                    String text = response.chatResponse().getResults().get(0).getOutput().getText();
+                    String text = response.chatResponse().getResults().getFirst().getOutput().getText();
                     if (text != null) {
                         fallbackBuffer.append(text);
                     }
@@ -100,19 +99,22 @@ public class ConversationStoreAdvisor implements BaseAdvisor {
         // 从DTO获取完整原文（优先）
         ChatInformationDTO chatInfoDTO = ChatInformationDTO.getFromContext(request.context());
 
+        String dtoAiReply = "";
+        if (chatInfoDTO != null) {
+            dtoAiReply = Objects.requireNonNullElse(chatInfoDTO.getAiReplyContent(), "");
+        }
+
         // ==================== 【核心修复1】空安全赋值：null 自动转为空字符串 "" ====================
         String finalAiReply = "";
         if (chatInfoDTO != null) {
-            // 用 Objects.requireNonNullElse 把 null 替换为空字符串
-            finalAiReply = Objects.requireNonNullElse(chatInfoDTO.getAiReplyContent(), "");
-        } else {
+            finalAiReply = dtoAiReply;
+       } else {
             finalAiReply = fallbackBuffer.toString();
         }
 
         // ==================== 【核心修复2】安全判断：只有非空内容才执行保存 ====================
         if (StringUtils.hasText(finalAiReply)) {
             executeSave(request.context(), finalAiReply);
-            log.info("【ConversationStoreAdvisor】流式收割完成，AI回复已更新");
         } else {
             // 【友好日志】适配你的场景：用户快速发消息，AI未输出任何内容就被取消
             log.warn("【ConversationStoreAdvisor】AI未输出任何回复，取消保存（触发场景：新消息打断/取消任务）");
@@ -134,8 +136,6 @@ public class ConversationStoreAdvisor implements BaseAdvisor {
             // ========== 新增调试打印：排查最后一段为空问题 ==========
             String splitContentJson = chatInfoDTO.getSplitContentJson();
             String lastSegment = SplitContentUtils.getLastSegment(splitContentJson);
-            log.info("【StoreAdvisor-调试】切分JSON: {} | 解析出最后一段: {}", splitContentJson, lastSegment);
-            // ======================================================
 
             chatInfoDTO.setLastSegment(lastSegment);
 
