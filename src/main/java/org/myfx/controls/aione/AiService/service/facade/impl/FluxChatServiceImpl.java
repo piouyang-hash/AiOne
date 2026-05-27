@@ -21,6 +21,7 @@ import org.myfx.controls.aione.AiService.utils.PromptTemplateReader;
 import org.myfx.controls.aione.ConnectService.dto.WebSocketMessage;
 import org.myfx.controls.aione.ConnectService.utils.ChannelManager;
 import org.myfx.controls.aione.ServiceCommon.context.UserContext;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.beans.BeanUtils;
@@ -198,7 +199,6 @@ public class FluxChatServiceImpl implements FluxChatService {
         // 核心：直接传入DTO，无多余参数
         return executeChatStreamWithContext(
                 aiChatDTO,
-                "SSW.txt",
                 Arrays.asList(
                         singleActiveSessionAdvisor,
                         summarySlidingWindowAdvisor,
@@ -217,7 +217,6 @@ public class FluxChatServiceImpl implements FluxChatService {
         // 🔥 AI主动消息：无UserContext，直接使用外部预填充的userId，不做任何修改
         return executeChatStreamWithContext(
                 aiChatDTO,
-                "AEDSSW.txt",
                 Arrays.asList(
                         singleActiveSessionAdvisor,
                         currentExecutingEventAdvisor,
@@ -226,7 +225,8 @@ public class FluxChatServiceImpl implements FluxChatService {
                         promptTemplateRenderAdvisor,
                         tokenCountingAdvisor,
                         conversationStoreAdvisor,
-                        new MySmartSplitterAdvisor(20)
+                        new MySmartSplitterAdvisor(20),
+                        new SimpleLoggerAdvisor(1000)
                 ),
                 "AI主动消息-总结型滑动窗口" // 标记专属日志标签，区分场景
         );
@@ -276,8 +276,8 @@ public class FluxChatServiceImpl implements FluxChatService {
             // 2. 链式调用：替换同步call()为流式stream()
             // 2. Chained call: Replace synchronous call() with streaming stream()
             return
-                    streamTestChatClient.getChatClient()
-                    // mainLlmClient.getClient()
+                    // streamTestChatClient.getChatClient()
+                    mainLlmClient.getClient()
                     .prompt()
                     .user(msg)
                     .advisors(advisorSpec -> {
@@ -305,7 +305,7 @@ public class FluxChatServiceImpl implements FluxChatService {
     /**
      * 流式 AI 调用执行器（最终版：返回前端ChatChunkDTO流 + 首帧携带Meta元数据），解决空首帧BUG
      */
-    private Flux<ChatChunkDTO> executeChatStreamWithContext(AiChatDTO aiChatDTO, String templateFile, List<Advisor> advisors, String logTag) {
+    private Flux<ChatChunkDTO> executeChatStreamWithContext(AiChatDTO aiChatDTO, List<Advisor> advisors, String logTag) {
         try {
             String respSessionUuid = aiChatDTO.getSessionUuid();
             String taskId = aiChatDTO.getTaskId();
@@ -314,7 +314,9 @@ public class FluxChatServiceImpl implements FluxChatService {
             AtomicReference<ChatStreamMetaDTO> metaDTORef = new AtomicReference<>();
             AtomicBoolean isFirstChunk = new AtomicBoolean(true);
 
-            return streamTestChatClient.getChatClient()
+            return
+                    //mainLlmClient.getClient()
+                    streamTestChatClient.getChatClient()
                     .prompt()
                     .user(chatInformationDTO.getUserMessage())
                     .advisors(advisorSpec -> {
@@ -354,25 +356,18 @@ public class FluxChatServiceImpl implements FluxChatService {
                         }
                         return new ChatChunkDTO(respSessionUuid, sendContent, first, false);
                     })
-                    // 公共结束包（只写一次）
                     .concatWith(buildEndChunk(respSessionUuid, taskId))
-
-                    // 🔥 优化：异常处理无重复代码
-                    // 🔥 修复：捕获包装后的异常，判断根因是否为Token不足
                     .onErrorResume(e -> {
-                        // 1. 判断根因是不是 TokenInsufficientException
                         if (e.getCause() instanceof TokenInsufficientException tokenEx) {
                             log.error("流式调用失败[{}] - Token不足: {}", logTag, tokenEx.getMessage());
                             return buildErrorResponse(respSessionUuid, taskId, tokenEx.getClass().getSimpleName(), tokenEx.getMessage());
                         }
-                        // 2. 其他所有异常：走未知异常
                         try {
                             throw e;
                         } catch (Throwable ex) {
                             throw new RuntimeException(ex);
                         }
                     })
-                    // 原有未知异常处理（保持不变）
                     .onErrorResume(Exception.class, e -> {
                         log.error("流式调用失败[{}] - 未知异常", logTag, e);
                         return buildErrorResponse(respSessionUuid, taskId, e.getClass().getSimpleName(), "AI服务异常，请稍后重试")

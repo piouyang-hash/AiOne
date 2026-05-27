@@ -9,9 +9,7 @@
     <resultMap id="RagVectorResultMap" type="org.myfx.controls.aione.AiService.entity.RagVector">
         <!-- 主键映射 -->
         <id column="id" property="id"/>
-        <!-- 新增：原文映射 -->
         <result column="content" property="content"/>
-        <!-- 普通字段映射 -->
         <result column="vector" property="vector"/>
         <result column="create_time" property="createTime"/>
     </resultMap>

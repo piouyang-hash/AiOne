@@ -46,7 +46,7 @@ public class PromptTemplateRenderAdvisor implements BaseAdvisor {
      * 前置逻辑：渲染系统提示词模板，拆分SystemMessage和UserMessage，替换AI请求的原始Prompt
      * 无需手动拆分模板内容，用户问题直接用原始msg，更简洁
      */
-// ==================== 核心改造后的 before 方法 ====================
+    // ==================== 核心改造后的 before 方法 ====================
     @Override
     public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
         // 一行获取DTO + 强制非空校验（不变）
@@ -99,7 +99,7 @@ public class PromptTemplateRenderAdvisor implements BaseAdvisor {
 
         // 完整提示词赋值给DTO（完全不变）
         String fullPromptText = finalPrompt.getContents();
-        if (fullPromptText == null || fullPromptText.isBlank()) {
+        if (fullPromptText.isBlank()) {
             log.warn("完整提示词文本为空，未赋值到DTO");
         } else {
             chatInfoDTO.setFullPromptText(fullPromptText);

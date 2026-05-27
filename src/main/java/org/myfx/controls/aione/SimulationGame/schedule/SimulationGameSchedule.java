@@ -27,10 +27,10 @@ public class SimulationGameSchedule {
 //    public void simulationGameTask() {
 //        System.out.println("simulationGameTask");
 //        // 1. 固定逻辑：每分钟更新游戏时间 +60秒
-//      //  gameGlobalTimeService.updateGameTimeByScan();
+////        gameGlobalTimeService.updateGameTimeByScan();
 //
 //        // 2.每分钟扫描一次
-//       // scheduleEventLoopService.executeEventLoop();
+////        scheduleEventLoopService.executeEventLoop();
 //
 //    }
 }

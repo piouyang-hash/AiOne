@@ -1,10 +1,10 @@
-package org.myfx.controls.aione.AiService.service.base.status.ai_behavior_db.upper.impl;
+package org.myfx.controls.aione.AiService.service.base.status.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.myfx.controls.aione.AiService.entity.ai_chat_db.AiEmotionRealState;
 import org.myfx.controls.aione.AiService.entity.user_behavior_db.UserFeatureScore;
 import org.myfx.controls.aione.AiService.service.base.status.ai_behavior_db.AiEmotionRealStateService;
-import org.myfx.controls.aione.AiService.service.base.status.ai_behavior_db.upper.StatusService;
+import org.myfx.controls.aione.AiService.service.base.status.StatusService;
 import org.myfx.controls.aione.AiService.service.base.status.user_behavior_db.UserFeatureScoreService;
 import org.myfx.controls.aione.AiService.vo.StatusVO;
 import org.myfx.controls.aione.ServiceCommon.context.UserContext;

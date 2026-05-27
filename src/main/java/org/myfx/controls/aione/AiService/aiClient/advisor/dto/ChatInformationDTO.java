@@ -147,13 +147,6 @@ public class ChatInformationDTO {
         return dtoObj instanceof ChatInformationDTO dto ? dto : null;
     }
 
-    // ==================== 核心改造：带日志的 setter ====================
-    public void setAiReplyContent(String aiReplyContent) {
-        // 每次调用 set 必打印！看清赋值内容
-        log.info("【⚠️ AI回复内容被赋值】setAiReplyContent = 【{}】", aiReplyContent);
-        this.aiReplyContent = aiReplyContent;
-    }
-
     /**
      * 填充动态提示词模板参数（仅核心模板字段，非空校验后放入）
      */

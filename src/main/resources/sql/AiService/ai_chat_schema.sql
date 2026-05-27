@@ -190,17 +190,18 @@ CREATE TABLE IF NOT EXISTS `ai_behavior_score`
 -- AI微服务-角色表（存储AI角色及人设配置）
 CREATE TABLE IF NOT EXISTS `ai_role`
 (
-    `role_id`        int          NOT NULL AUTO_INCREMENT COMMENT '角色ID（主键）',
-    `role_code`      varchar(50)  NOT NULL COMMENT '角色编码（唯一标识，如AFTER_SALE、BIRTHDAY_AI）',
-    `role_desc`      varchar(255) COMMENT '角色基础描述',
-    `persona_core`   text         NOT NULL COMMENT '人设核心定义',
-    `persona_tone`   varchar(50)  DEFAULT 'normal' COMMENT '人设语气风格',
-    `avatar_path`    varchar(255) DEFAULT '' NULL COMMENT '角色头像路径',
-    `create_user_id` bigint       NOT NULL COMMENT '【新增】角色创建人ID（归属用户）',
-    `role_status`    tinyint(1)   NOT NULL DEFAULT 0 COMMENT '【新增】角色状态 0-草稿 1-已发布',
-    `visible_scope`  tinyint(1)   NOT NULL DEFAULT 0 COMMENT '【新增】可见范围 0-私有(仅自己) 1-公开(所有人)',
-    `create_time`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time`    datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `role_id`          int          NOT NULL AUTO_INCREMENT COMMENT '角色ID（主键）',
+    `role_code`        varchar(50)  NOT NULL COMMENT '角色编码（唯一标识，如AFTER_SALE、BIRTHDAY_AI）',
+    `role_desc`        varchar(255) COMMENT '角色基础描述',
+    `persona_core`     text         NOT NULL COMMENT '人设核心定义',
+    `persona_tone`     varchar(50)  DEFAULT 'normal' COMMENT '人设语气风格',
+    `worldview_setting` TEXT        NULL COMMENT '世界观设定（允许为空）', -- 新增字段
+    `avatar_path`      varchar(255) DEFAULT '' NULL COMMENT '角色头像路径',
+    `create_user_id`   bigint       NOT NULL COMMENT '角色创建人ID（归属用户）',
+    `role_status`      tinyint(1)   NOT NULL DEFAULT 0 COMMENT '角色状态 0-草稿 1-已发布',
+    `visible_scope`    tinyint(1)   NOT NULL DEFAULT 0 COMMENT '可见范围 0-私有(仅自己) 1-公开(所有人)',
+    `create_time`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time`      datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`role_id`),
     UNIQUE KEY `uk_role_code` (`role_code`),
     KEY `idx_create_user` (`create_user_id`) COMMENT '创建人索引'

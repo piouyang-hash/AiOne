@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.myfx.controls.aione.SimulationGame.mapper.PersonStateMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.SimulationGame.entity.PersonState">
+        <id column="id" property="id"/>
+        <result column="hunger" property="hunger"/>
+        <result column="energy" property="energy"/>
+        <result column="mood" property="mood"/>
+        <result column="current_location_code" property="currentLocationCode"/>
+        <result column="current_event_code" property="currentEventCode"/>
+        <result column="activity_end_global_sec" property="activityEndGlobalSec"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 1. 新增 -->
+    <insert id="insertPersonState">
+        INSERT INTO simulate_person_state
+        (id, hunger, energy, mood, current_location_code, current_event_code, activity_end_global_sec)
+        VALUES
+            (#{id}, #{hunger}, #{energy}, #{mood}, #{currentLocationCode}, #{currentEventCode}, #{activityEndGlobalSec})
+    </insert>
+
+    <!-- 2. 根据ID查询 -->
+    <select id="selectPersonStateById" resultMap="BaseResultMap">
+        SELECT * FROM simulate_person_state WHERE id = #{id}
+    </select>
+
+    <!-- 3. 根据ID动态修改：字段不为null才更新，为null则不修改 -->
+    <update id="updatePersonStateById">
+        UPDATE simulate_person_state
+        <set>
+            <if test="hunger != null">
+                hunger = #{hunger},
+            </if>
+            <if test="energy != null">
+                energy = #{energy},
+            </if>
+            <if test="mood != null">
+                mood = #{mood},
+            </if>
+            <if test="currentLocationCode != null">
+                current_location_code = #{currentLocationCode},
+            </if>
+            <if test="currentEventCode != null">
+                current_event_code = #{currentEventCode},
+            </if>
+            <if test="activityEndGlobalSec != null">
+                activity_end_global_sec = #{activityEndGlobalSec},
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 4. 根据ID删除 -->
+    <delete id="deletePersonStateById">
+        DELETE FROM simulate_person_state WHERE id = #{id}
+    </delete>
+
+</mapper>

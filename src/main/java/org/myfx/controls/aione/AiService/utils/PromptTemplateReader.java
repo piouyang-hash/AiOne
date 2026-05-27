@@ -32,7 +32,7 @@ public class PromptTemplateReader {
             ClassPathResource resource = new ClassPathResource(filePath);
             if (!resource.exists()) {
                 log.error("Prompt模板文件不存在：{}", filePath);
-                throw new RuntimeException("模板文件不存在：" + filePath);
+                throw new RuntimeException(STR."模板文件不存在：\{filePath}");
             }
             // 读取文件内容为UTF-8字符串（避免中文乱码）
             byte[] contentBytes = FileCopyUtils.copyToByteArray(resource.getInputStream());
@@ -43,7 +43,7 @@ public class PromptTemplateReader {
             return new PromptTemplate(templateContent);
         } catch (Exception e) {
             log.error("读取Prompt模板文件失败，文件名：{}", templateFileName, e);
-            throw new RuntimeException("读取Prompt模板文件失败：" + templateFileName, e);
+            throw new RuntimeException(STR."读取Prompt模板文件失败：\{templateFileName}", e);
         }
     }
 

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.myfx.controls.aione.AiService.aiClient.AMTest.AiModelClient;
 import org.myfx.controls.aione.AiService.aiClient.AiClientHelper;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -63,7 +64,7 @@ public class AiClientConfiguration {
     @Qualifier("deepseekClient")
     public AiModelClient deepseekChatClient(OllamaChatModel ollamaChatModel) {
         // 1. 构建原生ChatClient
-        ChatClient chatClient = aiClientHelper.buildChatClient(ollamaChatModel, "deepseek-v3.1:671b-cloud");
+        ChatClient chatClient = aiClientHelper.buildChatClient(ollamaChatModel, "gemma4:31b-cloud");
         // 2. 包装为AiModelClient，硬编码绑定typeId（临时）
         return new AiModelClient(
                 chatClient,
@@ -123,7 +124,6 @@ public class AiClientConfiguration {
             public ChatResponse call(Prompt prompt) {
                 return new ChatResponse(List.of(new Generation(new AssistantMessage(testText))));
             }
-
             @Override
             public Flux<ChatResponse> stream(Prompt prompt) {
                 // 修正点：将 fromIterable 改为 fromStream

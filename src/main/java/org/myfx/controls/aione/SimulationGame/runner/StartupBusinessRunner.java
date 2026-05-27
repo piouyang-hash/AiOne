@@ -24,7 +24,7 @@ public class StartupBusinessRunner implements CommandLineRunner {
 //        // 第二步：调用continueEventRelay方法（已包含幂等性判断）
 //        // 如果有中断任务，会恢复执行；如果没有中断任务，直接返回
    //     eventRelayService.continueEventRelay();
-       // scheduleEventLoopService.initEventLoop();
+       //  scheduleEventLoopService.initEventLoop();
 
     }
 

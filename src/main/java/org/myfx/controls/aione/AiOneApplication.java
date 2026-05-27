@@ -3,6 +3,7 @@ package org.myfx.controls.aione;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @MapperScan(basePackages = {
@@ -11,6 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
         "org.myfx.controls.aione.AiService.mapper",
         "org.myfx.controls.aione.SimulationGame.mapper"
 })
+@EnableScheduling
 public class AiOneApplication {
 
     public static void main(String[] args) {

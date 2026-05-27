@@ -5,7 +5,7 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,18 +17,20 @@ public class AiClientHelper {
 
     /**
      * 通用ChatClient构建方法（底层核心封装）
-     * @param model 模型实例（OllamaChatModel/OpenAiChatModel）
+     * @param chatModel 模型实例（OllamaChatModel/OpenAiChatModel）
      * @param modelName 模型名称（如qwen3:0.6b/functiongemma）
      * @return 构建好的ChatClient
      */
-    public <T> ChatClient buildChatClient(T model, String modelName) {
-        // 初始化构建器（兼容多模型类型）
-        ChatClient.Builder builder = ChatClient.builder((ChatModel) model);
+    public ChatClient buildChatClient(ChatModel chatModel, String modelName) {
 
-        // 通用配置：默认模型参数
-        builder.defaultOptions(OpenAiChatOptions.builder().model(modelName));
+        // 1. 用官方静态builder创建配置（你源码里的builder()方法）
+        ChatOptions.Builder<?> optionsBuilder = ChatOptions.builder()
+                .model(modelName);
 
-        return builder.build();
+        // 2. 直接传入builder，完美匹配defaultOptions参数
+        return ChatClient.builder(chatModel)
+                .defaultOptions(optionsBuilder)
+                .build();
     }
 
     /**

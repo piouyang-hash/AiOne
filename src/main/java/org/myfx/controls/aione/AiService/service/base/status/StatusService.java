@@ -1,4 +1,4 @@
-package org.myfx.controls.aione.AiService.service.base.status.ai_behavior_db.upper;
+package org.myfx.controls.aione.AiService.service.base.status;
 
 import org.myfx.controls.aione.AiService.vo.StatusVO;
 

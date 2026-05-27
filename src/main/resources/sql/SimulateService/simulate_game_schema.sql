@@ -41,6 +41,25 @@ CREATE TABLE IF NOT EXISTS `simulate_location_event_relation`
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4 COMMENT = '模拟游戏-地点与事件多对多关联表（存储关联属性：事件在该地点的持续时间）';
 
+-- 4. 地点-事件-属性影响表（核心：定义事件对人物状态的改变）
+CREATE TABLE IF NOT EXISTS `simulate_location_event_effect`
+(
+    `effect_id`     int         NOT NULL AUTO_INCREMENT COMMENT '影响效果ID（主键）',
+    `location_code` varchar(50) NOT NULL COMMENT '地点编码（关联simulate_location）',
+    `event_code`    varchar(50) NOT NULL COMMENT '事件编码（关联simulate_event）',
+    -- 三维属性变化值（正数=增加，负数=减少）
+    `hunger_effect` decimal(4,1) NOT NULL DEFAULT 0.0 COMMENT '饥饿值变化量（执行事件后）',
+    `energy_effect` decimal(4,1) NOT NULL DEFAULT 0.0 COMMENT '精力值变化量（执行事件后）',
+    `mood_effect`   decimal(4,1) NOT NULL DEFAULT 0.0 COMMENT '心情值变化量（执行事件后）',
+    `create_time`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间（真实时间）',
+    `update_time`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录更新时间（真实时间）',
+    PRIMARY KEY (`effect_id`),
+    UNIQUE KEY `uk_location_event` (`location_code`, `event_code`), -- 一个地点+事件 仅一套属性效果
+    KEY `idx_location` (`location_code`),
+    KEY `idx_event` (`event_code`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT = '模拟游戏-地点事件对人物三维属性的影响表';
+
 -- 4. 事件执行序列规则表（适配：版本号=每日安排，如1=周一、2=周二，按地点+次序执行事件）
 CREATE TABLE IF NOT EXISTS `simulate_event_sequence`
 (
@@ -102,3 +121,23 @@ CREATE TABLE IF NOT EXISTS `simulate_game_global_time`
 -- 初始化唯一数据（必须执行！项目启动后只有这一条时间数据）
 INSERT IGNORE INTO `simulate_game_global_time` (`id`, `global_game_seconds`) VALUES (1, 0);
 
+-- 修复后：完美运行，无报错
+CREATE TABLE IF NOT EXISTS `simulate_person_state`
+(
+    `id` tinyint NOT NULL DEFAULT 1 COMMENT '主键（固定1，单角色模拟）',
+    -- 修复：decimal(4,1) 支持存储 100.0
+    `hunger` decimal(4,1) NOT NULL DEFAULT 0 COMMENT '饥饿值 0-100（越高越饿，每分钟+1.5）',
+    `energy` decimal(4,1) NOT NULL DEFAULT 100 COMMENT '精力值 0-100（越低越累，每分钟-0.8）',
+    `mood` decimal(4,1) NOT NULL DEFAULT 50 COMMENT '心情值 0-100（越高越开心，每分钟-0.3）',
+    `current_location_code` varchar(50) NULL COMMENT '当前地点编码',
+    `current_event_code` varchar(50) NULL COMMENT '当前事件编码',
+    `activity_end_global_sec` bigint NOT NULL DEFAULT 0 COMMENT '当前活动结束的全局秒数',
+    `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '状态更新时间（真实时间）',
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4 COMMENT = '模拟游戏-人物实时状态表（精简版）';
+
+-- 初始化人物状态：在家、无活动、三维属性默认值
+INSERT INTO `simulate_person_state`
+(hunger, energy, mood, current_location_code, current_event_code, activity_end_global_sec)
+VALUES (0, 100, 50, 'HOME', 'SLEEP', 28800);

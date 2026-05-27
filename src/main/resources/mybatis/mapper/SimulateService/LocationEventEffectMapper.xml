@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.myfx.controls.aione.SimulationGame.mapper.LocationEventEffectMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="org.myfx.controls.aione.SimulationGame.entity.LocationEventEffect">
+        <id column="effect_id" property="effectId"/>
+        <result column="location_code" property="locationCode"/>
+        <result column="event_code" property="eventCode"/>
+        <result column="hunger_effect" property="hungerEffect"/>
+        <result column="energy_effect" property="energyEffect"/>
+        <result column="mood_effect" property="moodEffect"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 新增 -->
+    <insert id="insertLocationEventEffect">
+        INSERT INTO simulate_location_event_effect
+            (location_code, event_code, hunger_effect, energy_effect, mood_effect)
+        VALUES
+            (#{locationCode}, #{eventCode}, #{hungerEffect}, #{energyEffect}, #{moodEffect})
+    </insert>
+
+    <!-- 根据ID查询 -->
+    <select id="selectLocationEventEffectById" resultMap="BaseResultMap">
+        SELECT * FROM simulate_location_event_effect WHERE effect_id = #{id}
+    </select>
+
+    <!-- 动态修改：有值才更新 -->
+    <update id="updateLocationEventEffectById">
+        UPDATE simulate_location_event_effect
+        <set>
+            <if test="locationCode != null">
+                location_code = #{locationCode},
+            </if>
+            <if test="eventCode != null">
+                event_code = #{eventCode},
+            </if>
+            <if test="hungerEffect != null">
+                hunger_effect = #{hungerEffect},
+            </if>
+            <if test="energyEffect != null">
+                energy_effect = #{energyEffect},
+            </if>
+            <if test="moodEffect != null">
+                mood_effect = #{moodEffect},
+            </if>
+        </set>
+        WHERE effect_id = #{effectId}
+    </update>
+
+    <!-- 删除 -->
+    <delete id="deleteLocationEventEffectById">
+        DELETE FROM simulate_location_event_effect WHERE effect_id = #{id}
+    </delete>
+
+</mapper>
