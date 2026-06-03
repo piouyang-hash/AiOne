@@ -379,8 +379,8 @@ public class FluxChatServiceImpl implements FluxChatService {
             AtomicBoolean isFirstChunk = new AtomicBoolean(true);
 
             return
-                    mainLlmClient.getClient()
-                    // streamTestChatClient.getChatClient()
+                    //mainLlmClient.getClient()
+                     streamTestChatClient.getChatClient()
                     .prompt()
                     .user(chatInformationDTO.getUserMessage())
                     .advisors(advisorSpec -> {

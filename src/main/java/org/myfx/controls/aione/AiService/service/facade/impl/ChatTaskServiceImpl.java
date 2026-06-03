@@ -99,8 +99,8 @@ public class ChatTaskServiceImpl implements ChatTaskService {
         String message = aiChatDTO.getMessage();
         Integer roleId = aiChatDTO.getRoleId();
         // 暂时为了测试TG，所以正常逻辑被我注释了，万一TG调试完毕，可以修改回来
-        // Integer userId = UserContext.getUserId();
-        Integer userId = aiChatDTO.getUserId();
+        // Integer userId = aiChatDTO.getUserId();
+        Integer userId = UserContext.getUserId();
         Long userSendTimestamp = aiChatDTO.getUserSendTimestamp();
         String userSessionKey = STR."\{userId}:\{sessionUuid}"; // 会话唯一标识
         Long userMessageId = aiChatDTO.getUserMessageId();
@@ -286,49 +286,26 @@ public class ChatTaskServiceImpl implements ChatTaskService {
      * 3. 兜底强制解锁（彻底删除Redis锁，永不残留）
      */
     private Mono<Void> safeUnlock(LockHolder holder) {
-        RLockReactive lock = holder.lock;
-        long lockThreadId = holder.threadId;
-        String lockKey = lock.getName();
-        long currentThreadId = Thread.currentThread().getId();
+        // 1. 如果当时根本没抢到锁，直接结束，什么都不用做
+        if (!holder.lockSuccess) {
+            return Mono.empty();
+        }
 
-        // =============== 超详细诊断日志 ===============
-        log.info("【解锁检查】lockKey:{}", lockKey);
-        log.info("【解锁检查】加锁线程ID:{} | 当前解锁线程ID:{}", lockThreadId, currentThreadId);
-        log.info("【解锁检查】线程是否一致:{}", lockThreadId == currentThreadId);
+        String lockKey = holder.lock.getName();
 
-        // 1. 检查锁是否存在
-        return lock.isLocked()
-                .doOnNext(locked -> log.info("【解锁检查】Redis中锁是否存在:{}", locked))
-                .flatMap(locked -> {
-                    if (!locked) {
-                        log.info("【解锁】锁已不存在，无需操作");
-                        return Mono.empty();
-                    }
-
-                    // 2. 检查是否被当前线程持有（用你提供的API）
-                    return lock.isHeldByThread(lockThreadId)
-                            .doOnNext(held -> log.info("【解锁检查】当前线程是否持有锁:{}", held))
-                            .flatMap(held -> {
-                                Mono<Void> unlockMono;
-                                if (held) {
-                                    // 有权限：正常解锁
-                                    unlockMono = lock.unlock(lockThreadId)
-                                            .doOnSuccess(v -> log.info("【解锁】✅ 正常解锁成功:{}", lockKey));
-                                } else {
-                                    // 无权限：线程切换导致，直接强制解锁（核心！）
-                                    // .then() 把 Mono<Boolean> 转为 Mono<Void>，解决类型红线
-                                    unlockMono = lock.forceUnlock()
-                                            .doOnSuccess(v -> log.info("【解锁】⚠️ 线程不一致，强制解锁成功:{}", lockKey))
-                                            .then();
-                                }
-
-                                // 统一捕获异常，永不报错
-                                return unlockMono
-                                        .onErrorResume(e -> {
-                                            log.error("【解锁】❌ 解锁失败，强制兜底清理锁:{}", lockKey, e);
-                                            return lock.forceUnlock().then();
-                                        });
-                            });
+        // 2. 直接调用响应式的 unlock()。
+        // Redisson 会自动利用当时加锁流的 Context 标识去 Redis 里匹配解锁，不需要你传任何线程 ID！
+        return holder.lock.unlock()
+                .doOnSuccess(v -> log.info("【队列调度·解锁】✅ 锁正常释放成功: {}", lockKey))
+                .onErrorResume(IllegalMonitorStateException.class, e -> {
+                    // 如果抛出这个异常，说明锁可能因为超时（Lease Time）已经在 Redis 里过期并被自动删除了
+                    log.warn("【队列调度·解锁】⚠️ 锁可能已过期自动释放: {}", lockKey);
+                    return Mono.empty();
+                })
+                .onErrorResume(e -> {
+                    // 捕获其他网络异常等，防止阻塞响应式下游
+                    log.error("【队列调度·解锁】❌ 解锁发生未知异常: {}", lockKey, e);
+                    return Mono.empty();
                 });
     }
 
@@ -436,7 +413,7 @@ public class ChatTaskServiceImpl implements ChatTaskService {
                 });
 
         // 4. 主任务逻辑
-        Mono<Void> mainTask = fluxChatService.newStreamChatWithStorageAndPushAndTelegram(aiChatDTO)
+        Mono<Void> mainTask = fluxChatService.newStreamChatWithStorageAndPush(aiChatDTO)
                 .takeWhile(chunk -> {
                     if (!cancelRequested.get()) {
                         return true;
