@@ -221,90 +221,58 @@ public class ChatTaskServiceImpl implements ChatTaskService {
         String userSessionKey = STR."\{userId}:\{sessionUuid}";
         RLockReactive lock = redissonReactiveClient.getLock(lockKey);
 
-        // 基础初始化日志
-        log.info("【队列调度】初始化 → userId:{} lockKey:{}", userId, lockKey);
+        log.info("【队列调度】开始调度 → userId:{}, lockKey:{}", userId, lockKey);
 
         return Mono.usingWhen(
-                        // ========== 1. 资源创建：抢锁（超详细日志） ==========
-                        Mono.defer(() -> {
-                            long currentThreadId = Thread.currentThread().getId();
-                            // 打印：当前线程 + 抢锁参数（核心）
-                            log.info("【队列调度·抢锁】线程ID:{} | 开始尝试抢锁", currentThreadId);
-                            log.info("【队列调度·抢锁】参数 → waitTime=0秒(不等待) leaseTime=-1(看门狗续期)");
+                        // 1. 尝试抢锁：抢锁成功则向下传递 lock 对象，失败则走空流
+                        lock.tryLock(0, -1, TimeUnit.SECONDS)
+                                .flatMap(success -> {
+                                    if (success) {
+                                        log.info("【队列调度】✅ 抢锁成功，准备执行队列...");
+                                        return Mono.just(lock); // 抢锁成功，把锁传给下一步
+                                    } else {
+                                        log.warn("【队列调度】❌ 抢锁失败，当前已有任务在执行");
+                                        return Mono.empty();    // 抢锁失败，直接中止下游
+                                    }
+                                }),
 
-                            // 执行抢锁，并打印原始结果
-                            return lock.tryLock(0, -1, TimeUnit.SECONDS)
-                                    .doOnSuccess(lockSuccess -> {
-                                        log.info("【队列调度·抢锁】Redisson原始返回结果: {}", lockSuccess);
-                                    })
-                                    .map(lockSuccess -> new LockHolder(lock, currentThreadId, lockSuccess));
-                        }),
+                        // 2. 执行业务：只有抢锁成功（拿到 lock）才会走到这里
+                        currentLock -> processQueue(userId, sessionUuid),
 
-                        // ========== 2. 资源使用：执行业务 ==========
-                        holder -> {
-                            if (!holder.lockSuccess) {
-                                // 抢锁失败，额外打印：锁当前是否被持有（排查关键！）
-                                return holder.lock.isLocked()
-                                        .doOnNext(locked -> log.warn("【队列调度】❌ 抢锁失败 | 锁当前状态: 已被持有={}", locked))
-                                        .then(Mono.empty());
-                            }
-                            log.info("【队列调度】✅ 抢锁成功 | 加锁线程ID:{} | 开始执行队列", holder.threadId);
-                            return processQueue(userId, sessionUuid);
-                        },
+                        // 3. 正常完成解锁
+                        currentLock -> safeUnlock(currentLock, "正常完成"),
 
-                        // ========== 3. 资源释放：正常完成解锁 ==========
-                        holder -> {
-                            log.info("【队列调度·解锁】触发：正常执行完成，准备解锁");
-                            return holder.lockSuccess ? safeUnlock(holder) : Mono.empty();
-                        },
+                        // 4. 异常时解锁
+                        (currentLock, err) -> safeUnlock(currentLock, "执行异常"),
 
-                        // ========== 4. 资源释放：异常解锁 ==========
-                        (holder, err) -> {
-                            log.error("【队列调度·解锁】触发：执行异常，准备解锁", err);
-                            return holder.lockSuccess ? safeUnlock(holder) : Mono.empty();
-                        },
-
-                        // ========== 5. 资源释放：取消解锁 ==========
-                        holder -> {
-                            log.info("【队列调度·解锁】触发：流程被取消，准备解锁");
-                            return holder.lockSuccess ? safeUnlock(holder) : Mono.empty();
-                        }
+                        // 5. 取消时解锁
+                        currentLock -> safeUnlock(currentLock, "流程取消")
                 )
+                // 6. 全局异常与清理兜底
                 .onErrorResume(e -> {
                     log.error("【队列调度】全局异常兜底", e);
-                    CURRENT_EXECUTING_TASK.remove(userSessionKey);
                     return Mono.empty();
+                })
+                .doFinally(signalType -> {
+                    // 无论如何，最终移除内存中的执行标记
+                    CURRENT_EXECUTING_TASK.remove(userSessionKey);
                 });
     }
 
-    private record LockHolder(RLockReactive lock, long threadId, boolean lockSuccess) { }
-
     /**
-     * 【终极安全解锁】严格使用你提供的API，无任何无效方法
-     * 1. 校验线程所有权
-     * 2. 正常解锁
-     * 3. 兜底强制解锁（彻底删除Redis锁，永不残留）
+     * 真正安全的响应式解锁逻辑（与线程完全解耦）
      */
-    private Mono<Void> safeUnlock(LockHolder holder) {
-        // 1. 如果当时根本没抢到锁，直接结束，什么都不用做
-        if (!holder.lockSuccess) {
-            return Mono.empty();
-        }
-
-        String lockKey = holder.lock.getName();
-
-        // 2. 直接调用响应式的 unlock()。
-        // Redisson 会自动利用当时加锁流的 Context 标识去 Redis 里匹配解锁，不需要你传任何线程 ID！
-        return holder.lock.unlock()
-                .doOnSuccess(v -> log.info("【队列调度·解锁】✅ 锁正常释放成功: {}", lockKey))
+    private Mono<Void> safeUnlock(RLockReactive lock, String triggerType) {
+        return lock.unlock()
+                .doOnSubscribe(s -> log.info("【队列调度·解锁】触发源: [{}], 开始释放锁: {}", triggerType, lock.getName()))
+                .doOnSuccess(v -> log.info("【队列调度·解锁】✅ 锁释放成功"))
                 .onErrorResume(IllegalMonitorStateException.class, e -> {
-                    // 如果抛出这个异常，说明锁可能因为超时（Lease Time）已经在 Redis 里过期并被自动删除了
-                    log.warn("【队列调度·解锁】⚠️ 锁可能已过期自动释放: {}", lockKey);
+                    // 解释：如果业务太慢导致锁超时被 Redis 删了，Redisson 解锁会抛这个错，直接无视即可
+                    log.warn("【队列调度·解锁】⚠️ 锁可能已超时自动释放，无需重复解锁");
                     return Mono.empty();
                 })
                 .onErrorResume(e -> {
-                    // 捕获其他网络异常等，防止阻塞响应式下游
-                    log.error("【队列调度·解锁】❌ 解锁发生未知异常: {}", lockKey, e);
+                    log.error("【队列调度·解锁】❌ 解锁时发生未知网络异常", e);
                     return Mono.empty();
                 });
     }
