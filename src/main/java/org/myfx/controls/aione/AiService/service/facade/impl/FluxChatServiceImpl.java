@@ -4,6 +4,8 @@ import io.netty.channel.Channel;
 import jakarta.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.myfx.controls.aione.AiService.Demo.telegramDemo.MyTelegramBot;
+import org.myfx.controls.aione.AiService.Demo.telegramDemo.TelegramPushService;
 import org.myfx.controls.aione.AiService.aiClient.AMTest.AiModelClient;
 import org.myfx.controls.aione.AiService.aiClient.advisor.*;
 import org.myfx.controls.aione.AiService.aiClient.advisor.dto.ChatInformationDTO;
@@ -25,6 +27,7 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -96,6 +99,9 @@ public class FluxChatServiceImpl implements FluxChatService {
     private final PromptTemplateReader promptTemplateReader;
 
     private final ChannelManager channelManager;
+
+    // 注入你的Telegram机器人
+    private final TelegramPushService telegramPushService;
 
     @Override
     public void sendCancellationFrame(String uniqueKey, Integer userId) {
@@ -194,19 +200,77 @@ public class FluxChatServiceImpl implements FluxChatService {
                 });
     }
 
+    // ===================== 🔥 新方法：原功能 + Telegram推送（不影响原有方法） =====================
+    @Override
+    public Flux<String> newStreamChatWithStorageAndPushAndTelegram(AiChatDTO aiChatDTO) {
+        String uniqueKey = STR."\{aiChatDTO.getSessionUuid()}:\{aiChatDTO.getTaskId()}";
+        String redisKey = AI_CHAT_STREAM_KEY_PREFIX + uniqueKey;
+        Integer userId = aiChatDTO.getUserId();
+
+        // 原有AI流式流（内部已封装错误为标准ChatChunkDTO，带isError=true）
+        Flux<ChatChunkDTO> originalFlux = summarySlidingWindowChatForAiActive(aiChatDTO);
+
+        return originalFlux
+                .publishOn(Schedulers.boundedElastic())
+                // ===================== Redis 自动存储：完全和原方法一致 =====================
+                .concatMap(chunk ->
+                        aiChatChunkReactiveRedisTemplate.opsForList()
+                                .rightPush(redisKey, chunk)
+                                .then(aiChatChunkReactiveRedisTemplate.expire(redisKey, CACHE_EXPIRE_TIME))
+                                .thenReturn(chunk)
+                                .onErrorResume(e -> {
+                                    log.error("Redis 存储失败，继续推送消息", e);
+                                    return Mono.just(chunk);
+                                })
+                )
+                // ===================== 【唯一修改】flatMapSequential 保证顺序 + WebSocket + 异步TG推送 =====================
+                .flatMapSequential(chunk -> {
+                    // 1. 原WebSocket推送逻辑（完全不变）
+                    try {
+                        Channel userChannel = channelManager.getChannel(userId);
+                        if (userChannel != null && userChannel.isActive()) {
+                            userChannel.writeAndFlush(WebSocketMessage.aiPush(chunk));
+                        } else {
+                            log.warn("❌ 用户{}不在线，跳过WebSocket推送", userId);
+                        }
+                    } catch (Exception e) {
+                        log.error("❌ WebSocket推送异常，userId:{}", userId, e);
+                    }
+
+                    // 2. 异步推送Telegram（非阻塞、不影响主流程）
+                    return Mono.fromRunnable(() -> {
+                                try {
+                                    // 只推送正常消息，错误消息不推送
+                                    if (chunk.getContent() != null && !chunk.isError()) {
+                                        telegramPushService.pushAiMessageToTelegram(chunk);
+                                    }
+                                } catch (Exception e) {
+                                    log.error("❌ Telegram推送异常，已忽略", e);
+                                }
+                            }).subscribeOn(Schedulers.boundedElastic())
+                            .thenReturn(chunk);
+                }, 1) // 严格保证消息顺序
+                // ===================== 转为字符串返回：完全和原方法一致 =====================
+                .map(chunk -> {
+                    return new ObjectMapper().writeValueAsString(chunk);
+                }).doOnError(Exception.class, e -> {
+                    log.error("AI 流式处理异常", e);
+                });
+    }
+
     @Override
     public Flux<ChatChunkDTO> summarySlidingWindowChat(AiChatDTO aiChatDTO) {
         // 核心：直接传入DTO，无多余参数
         return executeChatStreamWithContext(
                 aiChatDTO,
                 Arrays.asList(
-                        singleActiveSessionAdvisor,
-                        summarySlidingWindowAdvisor,
-                        promptTemplateRenderAdvisor,
-                        tokenCountingAdvisor,
-                        conversationStoreAdvisor,
-                        new MySmartSplitterAdvisor(20),
-                        chatScoreAdvisor
+                        singleActiveSessionAdvisor
+                        ,summarySlidingWindowAdvisor
+                        ,promptTemplateRenderAdvisor
+                        ,tokenCountingAdvisor
+                        ,conversationStoreAdvisor
+                        ,new MySmartSplitterAdvisor(20)
+                        ,chatScoreAdvisor
                 ),
                 "总结型滑动窗口"
         );
@@ -218,15 +282,15 @@ public class FluxChatServiceImpl implements FluxChatService {
         return executeChatStreamWithContext(
                 aiChatDTO,
                 Arrays.asList(
-                        singleActiveSessionAdvisor,
-                        currentExecutingEventAdvisor,
-                        personaFillAdvisor,
-                        summarySlidingWindowAdvisor,
-                        promptTemplateRenderAdvisor,
-                        tokenCountingAdvisor,
-                        conversationStoreAdvisor,
-                        new MySmartSplitterAdvisor(20),
-                        new SimpleLoggerAdvisor(1000)
+                        singleActiveSessionAdvisor
+                        ,currentExecutingEventAdvisor
+                        ,personaFillAdvisor
+                        ,summarySlidingWindowAdvisor
+                        ,promptTemplateRenderAdvisor
+                        ,tokenCountingAdvisor
+                        ,conversationStoreAdvisor
+                        ,new MySmartSplitterAdvisor(20)
+                        ,new SimpleLoggerAdvisor(1000)
                 ),
                 "AI主动消息-总结型滑动窗口" // 标记专属日志标签，区分场景
         );
@@ -315,8 +379,8 @@ public class FluxChatServiceImpl implements FluxChatService {
             AtomicBoolean isFirstChunk = new AtomicBoolean(true);
 
             return
-                    //mainLlmClient.getClient()
-                    streamTestChatClient.getChatClient()
+                    mainLlmClient.getClient()
+                    // streamTestChatClient.getChatClient()
                     .prompt()
                     .user(chatInformationDTO.getUserMessage())
                     .advisors(advisorSpec -> {

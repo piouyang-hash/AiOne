@@ -15,6 +15,12 @@ public interface ChatTaskService {
     void addAiChatTaskToQueue(AiChatDTO aiChatDTO);
 
     /**
+     * 仅通过消息内容，自动组装AiChatDTO并提交任务到队列
+     * @param message 用户消息内容
+     */
+    void createAndSubmitAiChatTask(String message);
+
+    /**
      * 开启AI流式输出对话任务，并将流式结果分片存储到Redis
      * @param aiChatDTO AI聊天请求参数
      */

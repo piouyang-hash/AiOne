@@ -8,6 +8,7 @@ import org.myfx.controls.aione.AiService.service.facade.ChatTaskService;
 import org.myfx.controls.aione.AiService.service.facade.FluxChatService;
 import org.myfx.controls.aione.AiService.utils.AiChatQueueRedisUtil;
 import org.myfx.controls.aione.ServiceCommon.context.UserContext;
+import org.myfx.controls.aione.ServiceCommon.utils.SnowflakeGenerator;
 import org.redisson.api.RLockReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import reactor.core.publisher.Sinks;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -96,9 +98,11 @@ public class ChatTaskServiceImpl implements ChatTaskService {
         String taskId = aiChatDTO.getTaskId();
         String message = aiChatDTO.getMessage();
         Integer roleId = aiChatDTO.getRoleId();
-        Integer userId = UserContext.getUserId();
+        // 暂时为了测试TG，所以正常逻辑被我注释了，万一TG调试完毕，可以修改回来
+        // Integer userId = UserContext.getUserId();
+        Integer userId = aiChatDTO.getUserId();
         Long userSendTimestamp = aiChatDTO.getUserSendTimestamp();
-        String userSessionKey = userId + ":" + sessionUuid; // 会话唯一标识
+        String userSessionKey = STR."\{userId}:\{sessionUuid}"; // 会话唯一标识
         Long userMessageId = aiChatDTO.getUserMessageId();
         boolean isActiveMessage = aiChatDTO.getIsActiveMessage();
 
@@ -130,6 +134,40 @@ public class ChatTaskServiceImpl implements ChatTaskService {
                     return executeChatQueueReactive(userId, sessionUuid);
                 }))
                 .subscribe();
+    }
+
+    @Override
+    public void createAndSubmitAiChatTask(String message) {
+        // 1. 初始化AiChatDTO
+        AiChatDTO aiChatDTO = new AiChatDTO();
+
+        // ===================== 核心：全自动组装字段（对齐控制器） =====================
+        // 会话UUID（自动生成）
+        aiChatDTO.setSessionUuid("f8b12087-af0b-4370-bad5-84f41b6bd6a7");
+
+        // 流式任务ID（自动生成）
+        aiChatDTO.setTaskId(UUID.randomUUID().toString());
+
+        // 用户消息（唯一入参）
+        aiChatDTO.setMessage(message);
+
+        // 角色ID（默认1）
+        aiChatDTO.setRoleId(1);
+
+        // 用户消息时间戳（当前系统时间）
+        aiChatDTO.setUserSendTimestamp(System.currentTimeMillis());
+
+        // 用户消息ID（雪花ID生成）
+        aiChatDTO.setUserMessageId(SnowflakeGenerator.generateId());
+
+        // 非主动消息
+        aiChatDTO.setIsActiveMessage(Boolean.FALSE);
+
+        // 用户ID【硬编码→待填写】（从上下文获取/手动指定，你后续补充）
+        aiChatDTO.setUserId(2);
+
+        // ===================== 提交任务到队列（和控制器完全一致） =====================
+        addAiChatTaskToQueue(aiChatDTO);
     }
 
     /**
@@ -296,7 +334,7 @@ public class ChatTaskServiceImpl implements ChatTaskService {
 
     private Mono<Void> processQueue(Integer userId, String sessionUuid) {
         String userIdStr = userId.toString();
-        String userSessionKey = userId + ":" + sessionUuid;
+        String userSessionKey = STR."\{userId}:\{sessionUuid}";
 
         // 1. 触发初始任务
         return aiChatQueueRedisUtil.getQueueSize(userIdStr, sessionUuid)
@@ -365,7 +403,7 @@ public class ChatTaskServiceImpl implements ChatTaskService {
                 // ========== 打印5：队列空，没有拿到任务 ==========
                 .defaultIfEmpty(false)
                 .doOnSuccess(result -> {
-                    if (!result) {
+                    if (Boolean.FALSE.equals(result)) {
                         log.info("【executeSingleTask】队列无任务，直接返回结果:{}", result);
                     }
                 });
@@ -398,7 +436,7 @@ public class ChatTaskServiceImpl implements ChatTaskService {
                 });
 
         // 4. 主任务逻辑
-        Mono<Void> mainTask = fluxChatService.newStreamChatWithStorageAndPush(aiChatDTO)
+        Mono<Void> mainTask = fluxChatService.newStreamChatWithStorageAndPushAndTelegram(aiChatDTO)
                 .takeWhile(chunk -> {
                     if (!cancelRequested.get()) {
                         return true;
@@ -417,7 +455,7 @@ public class ChatTaskServiceImpl implements ChatTaskService {
                     }
                     return Mono.empty();
                 }))
-                // 🌟 关键修复：主任务开始时，同时订阅取消监听（不阻塞）
+                // 主任务开始时，同时订阅取消监听（不阻塞）
                 .doOnSubscribe(subscription -> cancelHandler.subscribe()).then();
 
         // 5. 只等待主任务完成！取消监听是后台运行，不阻塞流程

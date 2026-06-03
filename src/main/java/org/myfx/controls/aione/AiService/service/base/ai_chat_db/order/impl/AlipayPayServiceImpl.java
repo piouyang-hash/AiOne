@@ -20,13 +20,15 @@ public class AlipayPayServiceImpl implements AlipayPayService {
     // 注入支付宝客户端（你的配置类中已初始化的Bean）
     private final AlipayClient alipayClient;
 
+    private final AlipayConfig alipayConfig;
+
     @Override
     public String generatePayForm(AlipayPayDTO payDTO) throws AlipayApiException {
         // 1. 创建支付宝电脑端支付请求对象
         AlipayTradePagePayRequest request = new AlipayTradePagePayRequest();
         // 2. 设置同步/异步回调地址
-        request.setReturnUrl(AlipayConfig.RETURN_URL);
-        request.setNotifyUrl(AlipayConfig.NOTIFY_URL);
+        request.setReturnUrl(alipayConfig.getReturnUrl());
+        request.setNotifyUrl(alipayConfig.getNotifyUrl());
 
         // 3. 拼接支付宝要求的业务参数
         String bizContent = String.format("{"
@@ -58,8 +60,8 @@ public class AlipayPayServiceImpl implements AlipayPayService {
         // 1. 创建支付宝【手机H5端】支付请求对象（官方核心标识）
         AlipayTradeWapPayRequest request = new AlipayTradeWapPayRequest();
         // 2. 设置同步/异步回调地址（和电脑版共用配置）
-        request.setReturnUrl(AlipayConfig.RETURN_URL);
-        request.setNotifyUrl(AlipayConfig.NOTIFY_URL);
+        request.setReturnUrl(alipayConfig.getReturnUrl());
+        request.setNotifyUrl(alipayConfig.getNotifyUrl());
 
         // 3. 拼接支付宝要求的业务参数
         String bizContent = String.format("{"

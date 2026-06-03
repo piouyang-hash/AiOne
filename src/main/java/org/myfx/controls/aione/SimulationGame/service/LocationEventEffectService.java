@@ -15,6 +15,11 @@ public interface LocationEventEffectService {
     LocationEventEffect getLocationEventEffectById(Integer id);
 
     /**
+     * 根据地点编码+事件编码查询（新增）
+     */
+    LocationEventEffect getByLocationAndEventCode(String locationCode, String eventCode);
+
+    /**
      * 根据ID修改
      */
     int editLocationEventEffectById(LocationEventEffect effect);

@@ -138,6 +138,6 @@ CREATE TABLE IF NOT EXISTS `simulate_person_state`
   DEFAULT CHARSET = utf8mb4 COMMENT = '模拟游戏-人物实时状态表（精简版）';
 
 -- 初始化人物状态：在家、无活动、三维属性默认值
-INSERT INTO `simulate_person_state`
+INSERT IGNORE INTO `simulate_person_state`
 (hunger, energy, mood, current_location_code, current_event_code, activity_end_global_sec)
 VALUES (0, 100, 50, 'HOME', 'SLEEP', 28800);

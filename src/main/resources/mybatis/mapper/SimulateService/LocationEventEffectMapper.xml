@@ -29,6 +29,14 @@
         SELECT * FROM simulate_location_event_effect WHERE effect_id = #{id}
     </select>
 
+    <!-- 2. 根据地点编码+事件编码查询（唯一索引，单条返回） -->
+    <select id="selectByLocationAndEventCode" resultMap="BaseResultMap">
+        select *
+        from simulate_location_event_effect
+        where location_code = #{locationCode}
+          and event_code = #{eventCode}
+    </select>
+
     <!-- 动态修改：有值才更新 -->
     <update id="updateLocationEventEffectById">
         UPDATE simulate_location_event_effect

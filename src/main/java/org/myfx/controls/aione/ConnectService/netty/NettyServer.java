@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 @Component
-
 public class NettyServer {
     // 长连接端口（配置到Nacos，微服务规范）
     @Value("${connect.netty.port}")
@@ -114,7 +113,7 @@ public class NettyServer {
                         .childHandler(new ChannelInitializer<SocketChannel>() {
                             @Override
                             protected void initChannel(SocketChannel ch) {
-                                System.out.println("收到新连接，正在初始化 Pipeline: " + ch.remoteAddress());
+                                log.info("收到新连接，正在初始化 Pipeline:{} ",ch.remoteAddress());
 
                                 ch.pipeline().addLast(new HttpServerCodec());
                                 ch.pipeline().addLast(new HttpObjectAggregator(65536));

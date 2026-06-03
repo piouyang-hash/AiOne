@@ -26,6 +26,13 @@ public class LocationEventEffectServiceImpl implements LocationEventEffectServic
     }
 
     @Override
+    public LocationEventEffect getByLocationAndEventCode(String locationCode, String eventCode) {
+        Assert.hasText(locationCode, "地点编码不能为空");
+        Assert.hasText(eventCode, "事件编码不能为空");
+        return locationEventEffectMapper.selectByLocationAndEventCode(locationCode, eventCode);
+    }
+
+    @Override
     public int editLocationEventEffectById(LocationEventEffect effect) {
         Assert.notNull(effect, "修改对象不能为空");
         Assert.notNull(effect.getEffectId(), "修改ID不能为空");

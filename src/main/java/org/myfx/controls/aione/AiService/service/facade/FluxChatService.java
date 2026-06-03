@@ -41,6 +41,11 @@ public interface FluxChatService {
     Flux<String> newStreamChatWithStorageAndPush(AiChatDTO aiChatDTO);
 
     /**
+     * 【Netty新版+Telegram推送】AI流式输出 + Redis缓存 + WebSocket推送 + 异步推送Telegram消息
+     */
+    Flux<String> newStreamChatWithStorageAndPushAndTelegram(AiChatDTO aiChatDTO);
+
+    /**
      * 总结型滑动窗口流式聊天（Summary Sliding Window Flux Chat）
      * @param aiChatDTO 对话请求DTO（包含消息、会话UUID、角色ID）
      * @return AI返回的流式内容

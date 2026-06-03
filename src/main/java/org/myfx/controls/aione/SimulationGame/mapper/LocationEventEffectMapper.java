@@ -17,6 +17,11 @@ public interface LocationEventEffectMapper {
     LocationEventEffect selectLocationEventEffectById(Integer id);
 
     /**
+     * 根据地点编码+事件编码联合查询
+     */
+    LocationEventEffect selectByLocationAndEventCode(String locationCode, String eventCode);
+
+    /**
      * 根据ID动态修改
      */
     int updateLocationEventEffectById(LocationEventEffect effect);

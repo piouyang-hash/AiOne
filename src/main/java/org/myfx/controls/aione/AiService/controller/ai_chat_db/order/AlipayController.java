@@ -41,6 +41,8 @@ public class AlipayController {
     // 注入支付宝回调事务服务
     private final AlipayCallbackService alipayCallbackService;
 
+    private final AlipayConfig alipayConfig;
+
     // 浏览器直接访问：http://localhost:8080/alipay/pay?orderId=123456
     /**
      * 支付宝支付测试接口
@@ -120,9 +122,9 @@ public class AlipayController {
             // 2. 验签
             boolean signVerified = AlipaySignature.rsaCheckV1(
                     params,
-                    AlipayConfig.ALIPAY_PUBLIC_KEY,
-                    AlipayConfig.CHARSET,
-                    AlipayConfig.SIGN_TYPE
+                    alipayConfig.getAlipayPublicKey(),
+                    alipayConfig.getCharset(),
+                    alipayConfig.getSignType()
             );
 
             if (!signVerified) {
