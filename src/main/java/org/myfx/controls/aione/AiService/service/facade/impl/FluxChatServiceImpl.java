@@ -157,7 +157,7 @@ public class FluxChatServiceImpl implements FluxChatService {
     // ===================== 🔥 新版：无手动序列化，纯DTO处理 =====================
     @Override
     public Flux<String> newStreamChatWithStorageAndPush(AiChatDTO aiChatDTO) {
-        String uniqueKey = STR."\{aiChatDTO.getSessionUuid()}:\{aiChatDTO.getTaskId()}";
+        String uniqueKey = String.format("%s:%s", aiChatDTO.getSessionUuid(), aiChatDTO.getTaskId());
         String redisKey = AI_CHAT_STREAM_KEY_PREFIX + uniqueKey;
         Integer userId = aiChatDTO.getUserId();
 
@@ -203,7 +203,7 @@ public class FluxChatServiceImpl implements FluxChatService {
     // ===================== 🔥 新方法：原功能 + Telegram推送（不影响原有方法） =====================
     @Override
     public Flux<String> newStreamChatWithStorageAndPushAndTelegram(AiChatDTO aiChatDTO) {
-        String uniqueKey = STR."\{aiChatDTO.getSessionUuid()}:\{aiChatDTO.getTaskId()}";
+        String uniqueKey = String.format("%s:%s", aiChatDTO.getSessionUuid(), aiChatDTO.getTaskId());
         String redisKey = AI_CHAT_STREAM_KEY_PREFIX + uniqueKey;
         Integer userId = aiChatDTO.getUserId();
 

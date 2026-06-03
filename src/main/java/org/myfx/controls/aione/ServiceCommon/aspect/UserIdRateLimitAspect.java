@@ -58,8 +58,8 @@ public class UserIdRateLimitAspect {
         // 4. 接口方法名
         String methodName = RequestContext.getMethodName();
 
-        // 5. Redis Key
-        String redisKey = STR."rateLimit:user:\{limitKey}:\{methodName}";
+        // 5. Redis Key（替换STR）
+        String redisKey = String.format("rateLimit:user:%s:%s", limitKey, methodName);
 
         // 6. Redis计数+限流判断
         try {
@@ -71,7 +71,8 @@ public class UserIdRateLimitAspect {
                 log.warn("用户ID限流触发！标识：{}，接口：{}，限制：{}秒内最多{}次",
                         limitKey, methodName, seconds, maxCount);
                 throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                        STR."访问频繁！\{seconds}秒内最多访问\{maxCount}次");
+                        // 替换STR
+                        String.format("访问频繁！%d秒内最多访问%d次", seconds, maxCount));
             }
         } catch (Exception e) {
             log.error("用户ID限流Redis异常，自动放行", e);

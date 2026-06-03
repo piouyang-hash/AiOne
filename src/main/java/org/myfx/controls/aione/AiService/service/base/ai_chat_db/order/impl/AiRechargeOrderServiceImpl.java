@@ -87,7 +87,7 @@ public class AiRechargeOrderServiceImpl implements AiRechargeOrderService {
         AiRechargeOrder rechargeOrder = aiRechargeOrderMapper.selectByOrderId(orderId);
 
         // 3. 校验订单是否存在
-        Assert.notNull(rechargeOrder, STR."查询的订单不存在，订单ID：\{orderId}");
+        Assert.notNull(rechargeOrder, String.format("查询的订单不存在，订单ID：%s", orderId));
 
         // 4. 返回订单信息
         return rechargeOrder;

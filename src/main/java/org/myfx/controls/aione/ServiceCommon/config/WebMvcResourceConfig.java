@@ -34,15 +34,15 @@ public class WebMvcResourceConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 1. AI角色头像
-        registry.addResourceHandler(STR."\{aiRoleAvatarNetworkUrl}/**")
-                .addResourceLocations(STR."file:\{aiRoleAvatarPhysicalPath}/");
+        registry.addResourceHandler(String.format("%s/**", aiRoleAvatarNetworkUrl))
+                .addResourceLocations(String.format("file:%s/", aiRoleAvatarPhysicalPath));
 
         // 2. 用户头像
-        registry.addResourceHandler(STR."\{userAvatarNetworkUrl}/**")
-                .addResourceLocations(STR."file:\{userAvatarPhysicalPath}/");
+        registry.addResourceHandler(String.format("%s/**", userAvatarNetworkUrl))
+                .addResourceLocations(String.format("file:%s/", userAvatarPhysicalPath));
 
         // 3. 书籍封面
-        registry.addResourceHandler(STR."\{bookCoverNetworkUrl}/**")
-                .addResourceLocations(STR."file:\{bookCoverPhysicalPath}/");
+        registry.addResourceHandler(String.format("%s/**", bookCoverNetworkUrl))
+                .addResourceLocations(String.format("file:%s/", bookCoverPhysicalPath));
     }
 }

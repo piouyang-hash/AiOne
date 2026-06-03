@@ -102,7 +102,7 @@ public class ChatTaskServiceImpl implements ChatTaskService {
         // Integer userId = aiChatDTO.getUserId();
         Integer userId = UserContext.getUserId();
         Long userSendTimestamp = aiChatDTO.getUserSendTimestamp();
-        String userSessionKey = STR."\{userId}:\{sessionUuid}"; // 会话唯一标识
+        String userSessionKey = String.format("%d:%s", userId, sessionUuid); // 会话唯一标识
         Long userMessageId = aiChatDTO.getUserMessageId();
         boolean isActiveMessage = aiChatDTO.getIsActiveMessage();
 
@@ -217,8 +217,8 @@ public class ChatTaskServiceImpl implements ChatTaskService {
      * 响应式队列执行（锁持有到整个队列执行完毕才释放）
      */
     private Mono<Void> executeChatQueueReactive(Integer userId, String sessionUuid) {
-        String lockKey = STR."lock:ai:chat:queue:\{userId}:\{sessionUuid}";
-        String userSessionKey = STR."\{userId}:\{sessionUuid}";
+        String lockKey = String.format("lock:ai:chat:queue:%d:%s", userId, sessionUuid);
+        String userSessionKey = String.format("%d:%s", userId, sessionUuid);
         RLockReactive lock = redissonReactiveClient.getLock(lockKey);
 
         log.info("【队列调度】开始调度 → userId:{}, lockKey:{}", userId, lockKey);
@@ -279,7 +279,7 @@ public class ChatTaskServiceImpl implements ChatTaskService {
 
     private Mono<Void> processQueue(Integer userId, String sessionUuid) {
         String userIdStr = userId.toString();
-        String userSessionKey = STR."\{userId}:\{sessionUuid}";
+        String userSessionKey = String.format("%d:%s", userId, sessionUuid);
 
         // 1. 触发初始任务
         return aiChatQueueRedisUtil.getQueueSize(userIdStr, sessionUuid)

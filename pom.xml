@@ -27,7 +27,7 @@
         <url/>
     </scm>
     <properties>
-        <java.version>21</java.version>
+        <java.version>26</java.version>
         <spring-ai.version>2.0.0-M7</spring-ai.version>
     </properties>
     <dependencyManagement>
@@ -269,9 +269,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
-                    <compilerArgs>--enable-preview</compilerArgs>
+                    <source>26</source>
+                    <target>26</target>
                 </configuration>
             </plugin>
         </plugins>

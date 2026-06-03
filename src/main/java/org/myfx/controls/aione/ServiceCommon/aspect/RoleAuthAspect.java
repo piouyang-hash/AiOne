@@ -93,7 +93,7 @@ public class RoleAuthAspect {
     private String getRoleDescList(List<RoleEnum> roleList) {
         return roleList.stream()
                 .map(RoleEnum::getDesc)
-                .reduce((a, b) -> STR."\{a}、\{b}")
+                .reduce((a, b) -> String.format("%s、%s", a, b))
                 .orElse("");
     }
 }
