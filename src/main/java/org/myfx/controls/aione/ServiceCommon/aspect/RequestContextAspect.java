@@ -15,7 +15,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Aspect
 @Component
 @Order(10) // 🔥 最高优先级！比你的JWT切面更早执行！
-public class RequestContextAop {
+public class RequestContextAspect {
 
     // 匹配所有Controller接口
     // 精准匹配：4个核心控制器包 + 所有子包下的所有接口方法
