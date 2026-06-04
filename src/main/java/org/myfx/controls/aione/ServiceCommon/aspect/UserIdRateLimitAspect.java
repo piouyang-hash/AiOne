@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 @Aspect
 @Component
 @RequiredArgsConstructor
-@Order(3)
+@Order(40)
 public class UserIdRateLimitAspect {
 
     private final StringRedisTemplate stringRedisTemplate;

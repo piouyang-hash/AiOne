@@ -23,7 +23,7 @@ import tools.jackson.databind.ObjectMapper;
 @Slf4j
 @Aspect
 @Component
-@Order(10) // 数值>1即可，满足JWT解析后执行
+@Order(100) // 数值>1即可，满足JWT解析后执行
 @RequiredArgsConstructor
 public class AdminAuditAspect {
 

@@ -22,7 +22,7 @@ import java.util.Objects;
 @Slf4j
 @Aspect
 @Component
-@Order(5)
+@Order(60)
 public class RoleAuthAspect {
 
     // 切入点：拦截所有标记了@RequireRole的类或方法（逻辑不变）
