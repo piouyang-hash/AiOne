@@ -220,22 +220,28 @@ public class AiController {
     public Flux<ChatChunkDTO> testSummarySlidingWindow(
             @Parameter(description = "测试用的对话消息（任意文本，用于触发总结型滑动窗口的流式回复）", required = true)
             @PathVariable String msg
-    ) {
+    ) throws Exception {
         // 固定测试用用户ID和会话UUID
         Integer testUserId = 10086;
         String testSessionUuid = "3b9e4f9a-8346-4b0f-9d1e-8f7c6a5b4d3e";
 
-        // 设置用户上下文
-        UserContext.setUserId(testUserId);
+        // ====================== 【改造】ScopedValue 绑定上下文 ======================
+        UserContext.UserContextData contextData = new UserContext.UserContextData(
+                testUserId,
+                null,   // 测试环境，角色传null
+                null    // 测试环境，应用类型传null
+        );
 
-        // ====================== 改造：构造 AiChatDTO ======================
+        // 构造DTO（不变）
         AiChatDTO aiChatDTO = new AiChatDTO();
         aiChatDTO.setMessage(msg);
         aiChatDTO.setSessionUuid(testSessionUuid);
         aiChatDTO.setRoleId(1);
 
-        // 核心：调用改造后的DTO方式
-        return fluxChatService.summarySlidingWindowChat(aiChatDTO);
+        // 绑定上下文后执行核心方法，返回Flux（完美适配响应式）
+        return UserContext.callWithContext(contextData, () ->
+                fluxChatService.summarySlidingWindowChat(aiChatDTO)
+        );
     }
 
     // 注入你的AI任务服务

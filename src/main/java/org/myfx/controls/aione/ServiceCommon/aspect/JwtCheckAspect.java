@@ -48,46 +48,50 @@ public class JwtCheckAspect {
                 throw new AuthException(AuthException.AuthError.MISSING_AUTH_HEADER);
             }
 
-            // 2. 获取当前接口注解要求的令牌类型
+            // 2. 获取接口注解
             CheckJwt checkJwt = getCheckJwtAnnotation(joinPoint);
             JwtTokenType requireTokenType = checkJwt.tokenType();
 
-            // 3. 黑名单通用校验
+            // 3. 黑名单校验
             String blacklistKey = "jwt:blacklist:" + token;
             Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistKey);
             if (Boolean.TRUE.equals(isBlacklisted)) {
                 throw new AuthException(AuthException.AuthError.TOKEN_REVOKED);
             }
 
-            // 4. 【核心】调用工具类：自动根据类型选密钥+解析+抛异常
+            // 4. 解析Token
             Claims claims = jwtTokenUtil.extractClaimsByTokenType(token, requireTokenType);
 
-            // 5. 强校验token_type 文本一致
+            // 5. 校验token类型
             String actualTokenType = claims.get("token_type", String.class);
             String needTokenTypeVal = requireTokenType.getType();
             if (!needTokenTypeVal.equals(actualTokenType)) {
                 throw new AuthException(AuthException.AuthError.REQUIRE_ACCESS_TOKEN);
             }
 
-            // 6. 解析信息塞入上下文
+            // 解析数据
             Date expireDate = claims.getExpiration();
-            JwtExpireTimeContext.setExpireDate(expireDate);
-
             Integer userId = claims.get("id", Integer.class);
-            String role = claims.get("role", String.class);
-            String appType = claims.get("appType", String.class);
+            String roleStr = claims.get("role", String.class);
+            String appTypeStr = claims.get("appType", String.class);
 
-            UserContext.setUserId(userId);
-            UserContext.setRole(role);
-            UserContext.setAppType(appType);
+            UserContext.UserContextData contextData = new UserContext.UserContextData(
+                    userId,
+                    UserContext.validateRole(roleStr),
+                    UserContext.validateAppType(appTypeStr)
+            );
 
-            // 放行
-            return joinPoint.proceed();
+            // ==================== 修复版：标准链式绑定（永远不报错） ====================
+            return ScopedValue
+                    // 第一个绑定：用户上下文
+                    .where(UserContext.CONTEXT, contextData)
+                    // 第二个绑定：过期时间（直接传 键+值，类型完全匹配！）
+                    .where(JwtExpireTimeContext.CURRENT_EXPIRE_DATE, expireDate)
+                    // 执行目标方法
+                    .call(joinPoint::proceed);
+
         } finally {
-            // 强制清理ThreadLocal
-            UserContext.clear();
-            JwtExpireTimeContext.clear();
-            RequestContext.clear();
+
         }
     }
 
