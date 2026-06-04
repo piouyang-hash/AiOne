@@ -24,7 +24,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/admin/simulation/event-sequence")
 @Tag(name = "管理员模拟游戏事件序列规则管理接口", description = "模拟游戏事件执行序列规则的新增、查询、删除管理接口（仅管理员可调用）")
-@CleanupThreadLocal
 @AdminWebCors
 @CheckJwt
 public class SimulateAdminEventSequenceController {

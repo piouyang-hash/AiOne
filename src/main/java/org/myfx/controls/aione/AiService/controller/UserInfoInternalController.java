@@ -10,7 +10,6 @@ import org.myfx.controls.aione.AiService.dto.UserOperateDTO;
 import org.myfx.controls.aione.AiService.service.base.my_memory_db.UserInfoService;
 import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.ServiceAuth;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "内部用户信息接口", description = "供 user-service 等可信微服务调用，用于用户注册/注销操作")
 @Slf4j
 @RequiredArgsConstructor
-@CleanupThreadLocal // 复用你项目中的线程局部变量清理注解
+// 复用你项目中的线程局部变量清理注解
 @Validated // 开启控制器参数校验
 public class UserInfoInternalController {
 

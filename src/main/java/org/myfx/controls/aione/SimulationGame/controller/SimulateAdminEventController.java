@@ -26,7 +26,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/admin/simulation/event")
 @Tag(name = "管理员模拟游戏事件管理接口", description = "模拟游戏事件的新增、查询、删除管理接口（仅管理员可调用）")
-@CleanupThreadLocal
 @AdminWebCors
 @CheckJwt
 public class SimulateAdminEventController {

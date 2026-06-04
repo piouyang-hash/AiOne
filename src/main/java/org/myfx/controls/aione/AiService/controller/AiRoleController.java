@@ -18,7 +18,6 @@ import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.AiAppCors;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.springframework.beans.BeanUtils;
 import org.springframework.http.MediaType;
@@ -35,7 +34,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/ai/role")
 @Tag(name = "AI角色管理接口", description = "AI角色的新增、配置管理等操作")
-@CleanupThreadLocal
 @RequiredArgsConstructor
 @AiAppCors
 @Slf4j

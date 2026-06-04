@@ -6,10 +6,14 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.myfx.controls.aione.ServiceCommon.context.RequestContext;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.util.Map;
 
 @Slf4j
 @Aspect
@@ -25,30 +29,49 @@ public class RequestContextAspect {
             + "execution(public * org.myfx.controls.aione.UserService.controller..*(..))")
     public void controllerPointcut() {}
 
+
     @Around("controllerPointcut()")
     public Object around(ProceedingJoinPoint joinPoint) {
         // 1. 获取请求对象
-        ServletRequestAttributes attributes = (ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
-        HttpServletRequest request = attributes.getRequest();
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        HttpServletRequest request = null;
 
-        // 2. 🔥 拿到你要的 methodName
-        String methodName = null;
-        if (joinPoint.getSignature() instanceof org.aspectj.lang.reflect.MethodSignature methodSignature) {
-            methodName = methodSignature.getName();
+        if (attributes != null) {
+            request = attributes.getRequest();
+        } else {
+            log.warn("[RequestContextAspect] ServletRequestAttributes is NULL - 无法获取HttpServletRequest，上下文初始化受限");
         }
 
-        // 3. 构建上下文
-        String ip = RequestContext.getIpAddress(request);
-        var headers = RequestContext.getHeaders(request);
+        // 🔥 方案1：显式声明为final（核心修复）
+        final String methodName;  // 改为final
+        if (joinPoint.getSignature() instanceof MethodSignature methodSignature) {
+            methodName = methodSignature.getName();
+        } else {
+            methodName = null;  // 必须初始化，final变量需明确赋值
+            log.warn("[RequestContextAspect] JoinPoint signature is NOT MethodSignature (type: {}) - 无法获取目标方法名",
+                    joinPoint.getSignature().getClass().getSimpleName());
+        }
+
+        // 3. 构建上下文数据
+        String ip = null;
+        Map<String, String> headers = null;
+
+        if (request != null) {
+            ip = RequestContext.getIpAddress(request);
+            headers = RequestContext.getHeaders(request);
+        } else {
+            log.warn("[RequestContextAspect] HttpServletRequest is NULL - 无法获取IP地址和请求头，上下文数据将缺失");
+        }
+
         var contextData = new RequestContext.RequestContextData(ip, methodName, headers);
 
-        // 4. ScopedValue绑定，执行目标方法
+        // 4. ScopedValue绑定并执行目标方法
         return RequestContext.bind(contextData).call(() -> {
             try {
-                // 执行Controller方法
                 return joinPoint.proceed();
             } catch (Throwable e) {
-                log.error("请求执行异常：", e);
+                // 现在可以安全使用final变量methodName
+                log.error("[RequestContextAspect] 请求执行异常（目标方法：{}）", methodName, e);
                 throw new RuntimeException(e);
             }
         });

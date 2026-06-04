@@ -29,7 +29,6 @@ import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.AiAppCors;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.myfx.controls.aione.ServiceCommon.context.UserContext;
 import org.myfx.controls.aione.ServiceCommon.utils.SnowflakeGenerator;
@@ -46,7 +45,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/ai")
 @Tag(name = "AI对话接口", description = "AI对话相关接口（含登录态/公共态两种模式）")
-@CleanupThreadLocal
 @AiAppCors
 @Slf4j
 @RequiredArgsConstructor

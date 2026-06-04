@@ -17,7 +17,6 @@ import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.AiAppCors;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,7 +29,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/ai/chat/session")
 @Tag(name = "AI对话会话接口", description = "AI对话会话的创建、查询等操作")
-@CleanupThreadLocal
 @RequiredArgsConstructor
 @AiAppCors
 @Slf4j

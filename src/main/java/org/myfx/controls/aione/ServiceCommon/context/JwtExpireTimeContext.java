@@ -11,16 +11,7 @@ public class JwtExpireTimeContext {
     public static final ScopedValue<Date> CURRENT_EXPIRE_DATE = ScopedValue.newInstance();
 
     // 兼容旧代码：业务代码不用改
-    public static void setExpireDate(Date expireDate) {
-        // ScopedValue 无需set，空实现兼容
-    }
-
-    // 兼容旧代码：业务代码不用改
     public static Date getExpireDate() {
         return CURRENT_EXPIRE_DATE.isBound() ? CURRENT_EXPIRE_DATE.get() : null;
-    }
-
-    // 兼容旧代码：空实现
-    public static void clear() {
     }
 }

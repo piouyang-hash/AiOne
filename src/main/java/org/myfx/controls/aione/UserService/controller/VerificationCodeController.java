@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/code") // 路径调整为更贴合功能的名称
 @RequiredArgsConstructor
-@CleanupThreadLocal
 @PublicAppCors
 @Slf4j
 @Tag(name = "验证码发送", description = "专门用于发送验证码的接口集合，当前包含邮箱验证码发送、超级管理员认证码生成接口")

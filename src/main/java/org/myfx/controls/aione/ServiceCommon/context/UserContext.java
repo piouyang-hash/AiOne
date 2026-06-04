@@ -122,10 +122,4 @@ public final class UserContext {
         log.error(errorMsg);
         throw new IllegalArgumentException(errorMsg);
     }
-
-    // ==================== 兼容旧 clear 方法（无需手动清理） ====================
-    public static void clear() {
-        log.debug("ScopedValue 上下文作用域结束自动释放，无需手动清理");
-    }
-
 }

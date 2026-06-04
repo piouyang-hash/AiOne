@@ -11,7 +11,6 @@ import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.AiAppCors;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +24,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/ai/token-balance")
 @RequiredArgsConstructor
-@CleanupThreadLocal
 @AiAppCors
 @Tag(name = "AI的Token余额查询接口", description = "AI对话的Token查询和充值")
 public class AiUserTokenBalanceController {

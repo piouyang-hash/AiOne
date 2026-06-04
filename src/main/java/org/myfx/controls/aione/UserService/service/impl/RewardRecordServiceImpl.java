@@ -1,7 +1,6 @@
 package org.myfx.controls.aione.UserService.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.context.UserContext;
 import org.myfx.controls.aione.UserService.mapper.RewardRecordMapper;
 import org.myfx.controls.aione.UserService.model.entity.RewardRecord;
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Service;
  */
 @Service // 标记为服务层组件，由 Spring 管理
 @RequiredArgsConstructor
-@CleanupThreadLocal
 public class RewardRecordServiceImpl implements RewardRecordService {
 
     // 注入 Mapper 接口（MyBatis 会自动生成实现类）

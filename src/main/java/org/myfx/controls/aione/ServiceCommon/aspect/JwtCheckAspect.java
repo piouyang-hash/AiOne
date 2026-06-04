@@ -41,58 +41,54 @@ public class JwtCheckAspect {
 
     @Around("jwtPointcut()")
     public Object doCheckJwt(ProceedingJoinPoint joinPoint) throws Throwable {
-        try {
-            // 1. 获取请求头Token
-            String token = RequestContext.getToken();
-            if (token.isBlank()) {
-                throw new AuthException(AuthException.AuthError.MISSING_AUTH_HEADER);
-            }
-
-            // 2. 获取接口注解
-            CheckJwt checkJwt = getCheckJwtAnnotation(joinPoint);
-            JwtTokenType requireTokenType = checkJwt.tokenType();
-
-            // 3. 黑名单校验
-            String blacklistKey = "jwt:blacklist:" + token;
-            Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistKey);
-            if (Boolean.TRUE.equals(isBlacklisted)) {
-                throw new AuthException(AuthException.AuthError.TOKEN_REVOKED);
-            }
-
-            // 4. 解析Token
-            Claims claims = jwtTokenUtil.extractClaimsByTokenType(token, requireTokenType);
-
-            // 5. 校验token类型
-            String actualTokenType = claims.get("token_type", String.class);
-            String needTokenTypeVal = requireTokenType.getType();
-            if (!needTokenTypeVal.equals(actualTokenType)) {
-                throw new AuthException(AuthException.AuthError.REQUIRE_ACCESS_TOKEN);
-            }
-
-            // 解析数据
-            Date expireDate = claims.getExpiration();
-            Integer userId = claims.get("id", Integer.class);
-            String roleStr = claims.get("role", String.class);
-            String appTypeStr = claims.get("appType", String.class);
-
-            UserContext.UserContextData contextData = new UserContext.UserContextData(
-                    userId,
-                    UserContext.validateRole(roleStr),
-                    UserContext.validateAppType(appTypeStr)
-            );
-
-            // ==================== 修复版：标准链式绑定（永远不报错） ====================
-            return ScopedValue
-                    // 第一个绑定：用户上下文
-                    .where(UserContext.CONTEXT, contextData)
-                    // 第二个绑定：过期时间（直接传 键+值，类型完全匹配！）
-                    .where(JwtExpireTimeContext.CURRENT_EXPIRE_DATE, expireDate)
-                    // 执行目标方法
-                    .call(joinPoint::proceed);
-
-        } finally {
-
+        // 1. 获取请求头Token
+        String token = RequestContext.getToken();
+        if (token.isBlank()) {
+            throw new AuthException(AuthException.AuthError.MISSING_AUTH_HEADER);
         }
+
+        // 2. 获取接口注解
+        CheckJwt checkJwt = getCheckJwtAnnotation(joinPoint);
+        JwtTokenType requireTokenType = checkJwt.tokenType();
+
+        // 3. 黑名单校验
+        String blacklistKey = "jwt:blacklist:" + token;
+        Boolean isBlacklisted = stringRedisTemplate.hasKey(blacklistKey);
+        if (Boolean.TRUE.equals(isBlacklisted)) {
+            throw new AuthException(AuthException.AuthError.TOKEN_REVOKED);
+        }
+
+        // 4. 解析Token
+        Claims claims = jwtTokenUtil.extractClaimsByTokenType(token, requireTokenType);
+
+        // 5. 校验token类型
+        String actualTokenType = claims.get("token_type", String.class);
+        String needTokenTypeVal = requireTokenType.getType();
+        if (!needTokenTypeVal.equals(actualTokenType)) {
+            throw new AuthException(AuthException.AuthError.REQUIRE_ACCESS_TOKEN);
+        }
+
+        // 解析数据
+        Date expireDate = claims.getExpiration();
+        Integer userId = claims.get("id", Integer.class);
+        String roleStr = claims.get("role", String.class);
+        String appTypeStr = claims.get("appType", String.class);
+
+        UserContext.UserContextData contextData = new UserContext.UserContextData(
+                userId,
+                UserContext.validateRole(roleStr),
+                UserContext.validateAppType(appTypeStr)
+        );
+
+        // ==================== 修复版：标准链式绑定（永远不报错） ====================
+        return ScopedValue
+                // 第一个绑定：用户上下文
+                .where(UserContext.CONTEXT, contextData)
+                // 第二个绑定：过期时间（直接传 键+值，类型完全匹配！）
+                .where(JwtExpireTimeContext.CURRENT_EXPIRE_DATE, expireDate)
+                // 执行目标方法
+                .call(joinPoint::proceed);
+
     }
 
     /**

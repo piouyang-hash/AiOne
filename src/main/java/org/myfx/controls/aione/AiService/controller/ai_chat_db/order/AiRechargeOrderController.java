@@ -18,7 +18,6 @@ import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.AiAppCors;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -34,7 +33,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/ai/recharge/order")
 @Tag(name = "AI充值订单接口", description = "AI充值订单创建、订单状态管理等操作")
-@CleanupThreadLocal
 @RequiredArgsConstructor
 @AiAppCors
 @Slf4j

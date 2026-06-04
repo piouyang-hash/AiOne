@@ -5,25 +5,19 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.myfx.controls.aione.AiService.common.ai_chat_db.PointRechargeTierEnum;
 import org.myfx.controls.aione.AiService.entity.ai_chat_db.token.AiUserPointBalance;
 import org.myfx.controls.aione.AiService.service.base.ai_chat_db.token.AiUserPointBalanceService;
 import org.myfx.controls.aione.AiService.vo.AiUserPointBalanceVO;
-import org.myfx.controls.aione.AiService.vo.PointRechargeTierVO;
 import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.AiAppCors;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * AI用户积分控制器
@@ -32,7 +26,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/ai/user/point")
 @Tag(name = "AI用户积分接口", description = "AI用户积分余额查询、积分增加等操作")
-@CleanupThreadLocal
 @RequiredArgsConstructor
 @AiAppCors
 @Slf4j

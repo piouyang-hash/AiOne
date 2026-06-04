@@ -13,7 +13,6 @@ import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.AiAppCors;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,7 +28,6 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/ai/recharge/goods")
 @Tag(name = "AI充值档位查询接口", description = "AI充值档位查询，检验操作")
-@CleanupThreadLocal
 @RequiredArgsConstructor
 @AiAppCors
 @Slf4j

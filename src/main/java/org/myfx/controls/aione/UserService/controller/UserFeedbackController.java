@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/user-api/feedback") // 接口前缀：用户API + 反馈模块
 @RequiredArgsConstructor
 @MyVueApp
-@CleanupThreadLocal
 @Tag(
         name = "用户体验反馈接口",
         description = "提供意见反馈提交/删除等功能"

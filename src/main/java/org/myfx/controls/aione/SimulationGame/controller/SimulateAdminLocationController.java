@@ -26,7 +26,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/admin/simulation/location")
 @Tag(name = "管理员模拟游戏地点管理接口", description = "模拟游戏地点的新增、查询、删除管理接口（仅管理员可调用）")
-@CleanupThreadLocal
 @AdminWebCors
 @CheckJwt
 public class SimulateAdminLocationController {

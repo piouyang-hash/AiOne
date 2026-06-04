@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.myfx.controls.aione.AiService.service.schedule.AiActiveChatAggregateService;
 import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/ai/active")
 @Tag(name = "AI主动消息接口", description = "AI主动消息相关接口（手动触发/测试专用）")
-@CleanupThreadLocal // 复用你原有线程变量清理注解
+// 复用你原有线程变量清理注解
 public class AiActiveMessageController {
 
     // 注入AI主动消息总业务接口（核心：调用你封装的完整流程）

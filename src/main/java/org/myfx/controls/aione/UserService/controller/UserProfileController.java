@@ -14,7 +14,6 @@ import org.myfx.controls.aione.UserService.service.AvatarService;
 import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.MyVueApp;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.myfx.controls.aione.UserService.common.UserServiceConstants;
@@ -39,7 +38,6 @@ import java.util.List;
 @RestController
 @CrossOrigin
 @RequestMapping("/user-profile/api")
-@CleanupThreadLocal
 @MyVueApp
 @Tag(name = "用户信息接口", description = "提供更新用户信息，获取用户头像接口")
 public class UserProfileController {

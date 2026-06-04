@@ -28,7 +28,6 @@ import java.util.List;
         name = "管理员模拟游戏地点与事件关联管理接口",
         description = "模拟游戏地点与事件关联的新增、查询、删除管理接口（仅管理员可调用）"
 )
-@CleanupThreadLocal
 @AdminWebCors
 @CheckJwt // 全局JWT认证（所有接口都需要Token）
 public class SimulateAdminLocationEventRelationController {

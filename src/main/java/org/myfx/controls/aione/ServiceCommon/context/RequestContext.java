@@ -54,9 +54,6 @@ public final class RequestContext {
         return CONTEXT.get().headers().get(headerName);
     }
 
-    // 兼容旧clear
-    public static void clear() {}
-
     // ==================== 工具方法 ====================
     public static String getIpAddress(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");

@@ -71,9 +71,9 @@ public class NettyServer {
 //                            // 要是你这样写，就会因为缺少构造参数而报错，此时修改成自动注入（字段注入方式）
 //                            // 但要是这样写，在并发下，又会因为单例bean报错（需要在类上加scope）
 //                            // 这是一个典型的“Spring Bean 循环依赖/初始化死锁”导致的 Netty 握手超时。
-////                            ch.pipeline().addLast(applicationContext.getBean(HeartbeatHandler.class));
-////                            // 4. 长连接业务处理器（绑定用户-通道）
-////                            ch.pipeline().addLast(applicationContext.getBean(ConnectHandler.class));
+//                            ch.pipeline().addLast(applicationContext.getBean(HeartbeatHandler.class));
+//                            // 4. 长连接业务处理器（绑定用户-通道）
+//                            ch.pipeline().addLast(applicationContext.getBean(ConnectHandler.class));
 //
 //                            // 直接从 Provider 获取新实例（前提是类上有 @Scope("prototype")）
 //                            ch.pipeline().addLast(heartbeatHandlerProvider.getObject());

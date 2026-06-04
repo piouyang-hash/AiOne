@@ -13,7 +13,6 @@ import org.myfx.controls.aione.UserService.service.RewardRecordService;
 import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 
 import org.myfx.controls.aione.ServiceCommon.annotation.ServiceAuth;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/rewards")
 @Tag(name = "打赏接口", description = "用户打赏相关操作")
 @RequiredArgsConstructor
-@CleanupThreadLocal
 @ServiceAuth(allowedServices = {"order-service"})
 @Slf4j
 public class RewardController {

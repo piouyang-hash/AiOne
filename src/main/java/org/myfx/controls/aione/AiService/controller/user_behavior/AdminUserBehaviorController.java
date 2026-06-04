@@ -12,7 +12,6 @@ import org.myfx.controls.aione.AiService.vo.BaseUserBehaviorVO;
 import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.myfx.controls.aione.ServiceCommon.annotation.RequireRole;
 import org.myfx.controls.aione.ServiceCommon.serviceEnum.RoleEnum;
@@ -28,7 +27,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/admin/behavior")
 @Tag(name = "管理员用户行为管理接口", description = "用户行为的新增/查询/更新/删除管理接口（仅管理员可调用）")
-@CleanupThreadLocal
 public class AdminUserBehaviorController {
 
     private final BaseUserBehaviorService baseUserBehaviorService;

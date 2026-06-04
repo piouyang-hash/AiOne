@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 // 配置允许前端域名跨域，支持OPTIONS预检请求
 @PublicAppCors
 @RequestMapping("/api/user")
-@CleanupThreadLocal
 @Slf4j
 @ApiTimeRecord("用户接口")
 @Tag(name = "用户接口", description = "提供注册、登录、注销、密码修改、邮箱修改、自动登录、退出登录等功能")

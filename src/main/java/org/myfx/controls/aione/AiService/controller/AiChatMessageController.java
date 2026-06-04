@@ -15,7 +15,6 @@ import org.myfx.controls.aione.ServiceCommon.AppResponse;
 import org.myfx.controls.aione.ServiceCommon.SwaggerResponseConstants;
 import org.myfx.controls.aione.ServiceCommon.annotation.AiAppCors;
 import org.myfx.controls.aione.ServiceCommon.annotation.CheckJwt;
-import org.myfx.controls.aione.ServiceCommon.annotation.CleanupThreadLocal;
 import org.myfx.controls.aione.ServiceCommon.annotation.RateLimit;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -31,7 +30,6 @@ import java.util.List;
 @Slf4j
 @RequiredArgsConstructor
 @Tag(name = "AI对话消息接口", description = "AI对话的消息查询和分页查询")
-@CleanupThreadLocal
 @AiAppCors
 public class AiChatMessageController {
 
